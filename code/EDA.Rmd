@@ -1,0 +1,159 @@
+---
+title: "MSDS 6372 Project 2"
+output: 
+    html_document:
+      keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readxl)
+library(dplyr)
+library(plyr)
+library(glmnet)
+library(ISLR)
+library(leaps)
+library(ggplot2)
+```
+##Data Set 1: Osteoporosis in Women
+
+From Hosmer, Lemeshow, and Sturdivant (2013), Applied Logistic Regression, 3rd Edition.
+The Global Longitudinal Study of Osteoporosis in Women (GLOW) is an international study of osteoporosis in women aged 55 years and over. The major goals of the study are to examine prevention and treatment of fractures and distribution of risk factors among older women. Complete details on the study as well as a list of GLOW publications may be found at the Center for Outcomes Research web site, <http://www.outcomes-umassmed.org/glow>. 
+There are over 60K observations in the original data set. This data set contains a sample of 500 of them. 
+The link below is to a website with the data set and description of the variables. The data set in question is called "glow500".
+
+<https://www.umass.edu/statdata/statdata/data/glow/index.html>
+Note: If you choose this data set, you MAY NOT use the Hosmer, Lemeshow, and Sturdivant text to help you in your analysis.
+You may only use Chapter 1 in order to obtain a description of the data.
+
+Of course if you dont have the book
+
+<https://www.umass.edu/statdata/statdata/data/glow/glow.pdf>
+provides definitions to the variables.
+
+
+The Global Longitudinal Study of Osteoporosis in Women (GLOW) (2005-2014) was a prospective cohort study of physician practices in the provision of prophylaxis and treatment against osteoporotic fractures. The goal of this research was to improve understanding of the risk and prevention of osteoporosis-related fractures among female residents of 10 countries who were 55 years of age and older. GLOW enrolled over 60,000 women through over 700 physicians in 10 countries, and conducted annual follow-up for up to 5 years through annual patient questionnaires.
+
+## Data Import and Cleaning
+
+```{r}
+
+dataset <- read.csv("C:/Users/carol/OneDrive/Documents/MSDS6372/Proj2/glow500.csv", sep=",", stringsAsFactors = TRUE, header=TRUE)
+str(dataset)
+
+# list rows of data that have missing values 
+dataset[!complete.cases(dataset),]
+# create new dataset without missing data 
+dataset <- na.omit(dataset)
+
+#remove FRACSCORE feature
+drops <- c("FRACSCORE")
+dataset <- dataset[ , !(names(dataset) %in% drops)]
+
+colnames(dataset)[colnames(dataset)=="ï..SUB_ID"] <- "SUB_ID"
+```
+
+##  Exploratory Data Analysis
+
+```{r}
+attach(dataset)
+summary(dataset)
+
+#create an nicer summary table
+index<-which(sapply(dataset,is.numeric))
+tab.cont<-c()
+
+for (i in index){
+  tab.cont<-rbind(tab.cont,summary(dataset[,i]))
+}
+rownames(tab.cont)<-names(dataset)[index]
+View(tab.cont)
+tab.cont
+
+#Sanity check make sure it is spilt roughly 50/50
+prop.table(table(dataset$PRIORFRAC))
+prop.table(table(dataset$PREMENO))
+prop.table(table(dataset$ARMASSIST))
+prop.table(table(dataset$SMOKE))
+prop.table(table(dataset$MOMFRAC))
+
+#Correlation
+cor.mat <-cor(dataset[,index])
+cor.mat
+#These are the correlations of each predictor to FRACTURE
+attach(dataset)
+sort(cor.mat[14,])
+plot(PRIORFRAC,FRACTURE)
+plot(AGE,FRACTURE)
+plot(WEIGHT,FRACTURE)
+plot(HEIGHT,FRACTURE)
+plot(BMI,FRACTURE)
+plot(PREMENO,FRACTURE)
+plot(MOMFRAC,FRACTURE)
+plot(ARMASSIST,FRACTURE)
+plot(SMOKE,FRACTURE)
+plot(RATERISK,FRACTURE)
+
+Numeric_Vars <- dataset[,sapply(dataset, is.integer)]
+
+library(dplyr)
+
+Numeric_Vars <- dataset %>%
+  select(PRIORFRAC,AGE,WEIGHT,HEIGHT,BMI,PREMENO,MOMFRAC,ARMASSIST,SMOKE,RATERISK,FRACTURE)
+
+colnames(Numeric_Vars)
+
+library("corrplot")
+
+corrplot(cor(Numeric_Vars), method = "number", type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45)
+#boxplots
+boxplot(FRACTURE~MOMFRAC)
+boxplot(FRACTURE~HEIGHT)
+
+library(ggplot2)
+library(gridExtra)
+theme_set(theme_light())
+
+
+WEIGHT <- ggplot(dataset, aes(x = FRACTURE, y = WEIGHT)) +
+               geom_boxplot() + coord_flip()
+
+HEIGHT <- ggplot(dataset, aes(x = FRACTURE, y = HEIGHT)) +
+               geom_boxplot() + coord_flip()
+
+BMI <- ggplot(dataset, aes(x = FRACTURE, y = BMI)) +
+                    geom_boxplot() + coord_flip()
+
+AGE <- ggplot(dataset, aes(x = FRACTURE, y = AGE)) +
+       geom_boxplot() + coord_flip()
+
+grid.arrange(WEIGHT,
+             HEIGHT, BMI,
+             AGE,
+             nrow = 3)
+attach(dataset)
+#Correlation plots
+pairs(dataset[,4:13])
+par(mfrow=c(1,3))
+plot(dataset$WEIGHT,dataset$HEIGHT)
+plot(dataset$AGE,dataset$PRIORFRAC)
+plot(dataset$BMI,dataset$PREMENO)
+plot(dataset$SMOKE,dataset$RATERISK)
+plot(dataset$FRACTURE,dataset$RATERISK)
+
+#Plotting data via ggplot2
+mysummary <-function(x){
+  result<-c(length(x),mean(x),sd(x),sd(x)/length(x))
+  names(result)<-c("N","Mean","SD","SE")
+  return(result)
+}
+sumstats<-aggregate(FRACTURE~RATERISK + PRIORFRAC,data=dataset,mysummary)
+sumstats<-cbind(sumstats[,1:2],sumstats[,-(1:2)])
+attach(sumstats)
+
+ggplot(sumstats,aes(x=sumstats$PRIORFRAC,y=Mean,group=RATERISK,colour=RATERISK)) + ylab("Osteo Score") + geom_line() + geom_point() + xlab("Prior Fracture") +  geom_errorbar(aes(ymin=sumstats$Mean-sumstats$SE,ymax=sumstats$Mean+sumstats$SE),width=.1)
+
+detach(dataset)
+```
