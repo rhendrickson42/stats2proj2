@@ -4,7 +4,7 @@ setup(
     name='src',
     packages=find_packages(),
     version='0.1.0',
-    description='stats2 project2',
+    description='stats2 proj2',
     author='randall',
     license='',
 )
