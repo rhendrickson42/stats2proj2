@@ -15,6 +15,10 @@ library(glmnet)
 library(ISLR)
 library(leaps)
 library(ggplot2)
+library(ROCR)
+library(MASS)
+library(pheatmap)
+library(randomForest)
 ```
 ##Data Set 1: Osteoporosis in Women
 
@@ -35,7 +39,7 @@ provides definitions to the variables.
 
 The Global Longitudinal Study of Osteoporosis in Women (GLOW) (2005-2014) was a prospective cohort study of physician practices in the provision of prophylaxis and treatment against osteoporotic fractures. The goal of this research was to improve understanding of the risk and prevention of osteoporosis-related fractures among female residents of 10 countries who were 55 years of age and older. GLOW enrolled over 60,000 women through over 700 physicians in 10 countries, and conducted annual follow-up for up to 5 years through annual patient questionnaires.
 
-## Data Import and Cleaning
+## Setup: Data Import and Cleaning
 
 ```{r}
 
@@ -54,10 +58,20 @@ dataset <- dataset[ , !(names(dataset) %in% drops)]
 colnames(dataset)[colnames(dataset)=="ï..SUB_ID"] <- "SUB_ID"
 ```
 
+## Setup: Train / Test
+
+```{r}
+set.seed(1234)
+train <- nrow(dataset) * .70
+index<-sample(1:500,train,replace=FALSE)
+test<-dataset[-index,]
+train<-dataset[index,]
+```
+
 ##  Exploratory Data Analysis
 
 ```{r}
-attach(dataset)
+
 summary(dataset)
 
 #create an nicer summary table
@@ -112,7 +126,6 @@ corrplot(cor(Numeric_Vars), method = "number", type = "upper", order = "hclust",
 boxplot(FRACTURE~MOMFRAC)
 boxplot(FRACTURE~HEIGHT)
 
-library(ggplot2)
 library(gridExtra)
 theme_set(theme_light())
 
@@ -155,5 +168,86 @@ attach(sumstats)
 
 ggplot(sumstats,aes(x=sumstats$PRIORFRAC,y=Mean,group=RATERISK,colour=RATERISK)) + ylab("Osteo Score") + geom_line() + geom_point() + xlab("Prior Fracture") +  geom_errorbar(aes(ymin=sumstats$Mean-sumstats$SE,ymax=sumstats$Mean+sumstats$SE),width=.1)
 
+
 detach(dataset)
+```
+##Week 13 code
+
+```{r}
+##glmnet
+dat <- dataset
+#Get Training Set
+dat.train <- train
+
+dat.train.x <- dat.train[,1:ncol(dat.train)]
+dat.train.y <- dat.train$FRACTURE
+
+dat.train.y <- as.factor(as.character(dat.train.y))
+
+
+#
+#PCA
+pc.result<-prcomp(dat.train.x,scale.=TRUE)
+pc.scores<-pc.result$x
+pc.scores<-data.frame(pc.scores)
+pc.scores$FRACTURE<-dat.train.y
+
+PCA <- pc.result$rotation
+PCA
+
+
+#Scree plot
+pc.eigen<-(pc.result$sdev)^2
+pc.prop<-pc.eigen/sum(pc.eigen)
+pc.cumprop<-cumsum(pc.prop)
+plot(1:14,pc.prop,type="l",main="Scree Plot",ylim=c(0,1),xlab="PC #",ylab="Proportion of Variation")
+lines(1:14,pc.cumprop,lty=3)
+
+#Use ggplot2 to plot the first few pc's
+ggplot(data = pc.scores, aes(x = PC1, y = PC2)) +  geom_point(aes(col=FRACTURE), size=1)+ geom_hline(yintercept = 0, colour = "gray65") +  geom_vline(xintercept = 0, colour = "gray65") +  ggtitle("PCA plot of Osteo Study")
+
+ggplot(data = pc.scores, aes(x = PC1, y = PC3)) +  geom_point(aes(col=FRACTURE), size=1)+ geom_hline(yintercept = 0, colour = "gray65") +  geom_vline(xintercept = 0, colour = "gray65") +  ggtitle("PCA plot of Osteo Study")
+
+ggplot(data = pc.scores, aes(x = PC2, y = PC3)) +  geom_point(aes(col=FRACTURE), size=1)+ geom_hline(yintercept = 0, colour = "gray65") +  geom_vline(xintercept = 0, colour = "gray65") +  ggtitle("PCA plot of Osteo Study")
+
+
+#Lets look at a heatmap using hierarchical clustering to see if the 
+#response naturually clusters out using the predictors
+  
+#Transposting the predictor matrix and giving the response categories its
+#row names.
+
+library(RColorBrewer)
+x<-t(dat.train.x)
+colnames(x)<-dat.train.y
+pheatmap(x,annotation_col=data.frame(FRACTURE=dat.train.y),scale="row",legend=T,color=colorRampPalette(c("blue","white", "red"), space = "rgb")(100))
+
+
+ 
+#glmnet requires a matrix 
+dat.train.x <- as.matrix(dat.train.x)
+library(glmnet)
+cvfit <- cv.glmnet(dat.train.x, dat.train.y, family = "binomial", type.measure = "class", nlambda = 1000)
+plot(cvfit)
+coef(cvfit, s = "lambda.min")
+
+#Get training set predictions...We know they are biased but lets create ROC's.
+#These are predicted probabilities from logistic model  exp(b)/(1+exp(b))
+fit.pred <- predict(cvfit, newx = dat.train.x, type = "response")
+
+#Compare the prediction to the real outcome
+head(fit.pred)
+head(dat.train.y)
+
+#Create ROC curves
+pred <- prediction(fit.pred[,1], dat.train.y)
+roc.perf = performance(pred, measure = "tpr", x.measure = "fpr")
+auc.train <- performance(pred, measure = "auc")
+auc.train <- auc.train@y.values
+
+#Plot ROC
+plot(roc.perf)
+abline(a=0, b= 1) #Ref line indicating poor performance
+text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
+
 ```
