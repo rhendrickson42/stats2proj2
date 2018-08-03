@@ -56,22 +56,25 @@ drops <- c("FRACSCORE")
 dataset <- dataset[ , !(names(dataset) %in% drops)]
 
 colnames(dataset)[colnames(dataset)=="ï..SUB_ID"] <- "SUB_ID"
+
 ```
 
 ## Setup: Train / Test
 
-```{r}
+```{r include=FALSE}
+
 set.seed(1234)
 train <- nrow(dataset) * .70
 index<-sample(1:500,train,replace=FALSE)
 test<-dataset[-index,]
 train<-dataset[index,]
+
 ```
 
 ##  Exploratory Data Analysis
 
 ```{r}
-
+attach(dataset)
 summary(dataset)
 
 #create an nicer summary table
@@ -95,6 +98,7 @@ prop.table(table(dataset$MOMFRAC))
 #Correlation
 cor.mat <-cor(dataset[,index])
 cor.mat
+
 #These are the correlations of each predictor to FRACTURE
 attach(dataset)
 sort(cor.mat[14,])
@@ -110,11 +114,6 @@ plot(SMOKE,FRACTURE)
 plot(RATERISK,FRACTURE)
 
 Numeric_Vars <- dataset[,sapply(dataset, is.integer)]
-
-library(dplyr)
-
-Numeric_Vars <- dataset %>%
-  select(PRIORFRAC,AGE,WEIGHT,HEIGHT,BMI,PREMENO,MOMFRAC,ARMASSIST,SMOKE,RATERISK,FRACTURE)
 
 colnames(Numeric_Vars)
 
@@ -184,8 +183,6 @@ dat.train.y <- dat.train$FRACTURE
 
 dat.train.y <- as.factor(as.character(dat.train.y))
 
-
-#
 #PCA
 pc.result<-prcomp(dat.train.x,scale.=TRUE)
 pc.scores<-pc.result$x
@@ -221,7 +218,6 @@ library(RColorBrewer)
 x<-t(dat.train.x)
 colnames(x)<-dat.train.y
 pheatmap(x,annotation_col=data.frame(FRACTURE=dat.train.y),scale="row",legend=T,color=colorRampPalette(c("blue","white", "red"), space = "rgb")(100))
-
 
  
 #glmnet requires a matrix 
