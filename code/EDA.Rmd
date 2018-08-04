@@ -52,10 +52,8 @@ dataset[!complete.cases(dataset),]
 dataset <- na.omit(dataset)
 
 #remove FRACSCORE feature
-drops <- c("FRACSCORE")
+drops <- c("ï..SUB_ID","SITE_ID", "PHY_ID","FRACSCORE")
 dataset <- dataset[ , !(names(dataset) %in% drops)]
-
-colnames(dataset)[colnames(dataset)=="ï..SUB_ID"] <- "SUB_ID"
 
 ```
 
@@ -72,7 +70,7 @@ train<-dataset[index,]
 ```
 
 ##  Exploratory Data Analysis
-
+### Summary
 ```{r}
 attach(dataset)
 summary(dataset)
@@ -95,13 +93,17 @@ prop.table(table(dataset$ARMASSIST))
 prop.table(table(dataset$SMOKE))
 prop.table(table(dataset$MOMFRAC))
 
+```
+###Correlation
+
+```{r}
 #Correlation
 cor.mat <-cor(dataset[,index])
 cor.mat
 
 #These are the correlations of each predictor to FRACTURE
 attach(dataset)
-sort(cor.mat[14,])
+sort(cor.mat[11,])
 plot(PRIORFRAC,FRACTURE)
 plot(AGE,FRACTURE)
 plot(WEIGHT,FRACTURE)
@@ -121,9 +123,8 @@ library("corrplot")
 
 corrplot(cor(Numeric_Vars), method = "number", type = "upper", order = "hclust", 
          tl.col = "black", tl.srt = 45)
-#boxplots
-boxplot(FRACTURE~MOMFRAC)
-boxplot(FRACTURE~HEIGHT)
+
+
 
 library(gridExtra)
 theme_set(theme_light())
@@ -146,8 +147,9 @@ grid.arrange(WEIGHT,
              AGE,
              nrow = 3)
 attach(dataset)
+
 #Correlation plots
-pairs(dataset[,4:13])
+pairs(dataset[,1:11])
 par(mfrow=c(1,3))
 plot(dataset$WEIGHT,dataset$HEIGHT)
 plot(dataset$AGE,dataset$PRIORFRAC)
@@ -170,7 +172,7 @@ ggplot(sumstats,aes(x=sumstats$PRIORFRAC,y=Mean,group=RATERISK,colour=RATERISK))
 
 detach(dataset)
 ```
-##Week 13 code
+##PCA
 
 ```{r}
 ##glmnet
@@ -197,8 +199,8 @@ PCA
 pc.eigen<-(pc.result$sdev)^2
 pc.prop<-pc.eigen/sum(pc.eigen)
 pc.cumprop<-cumsum(pc.prop)
-plot(1:14,pc.prop,type="l",main="Scree Plot",ylim=c(0,1),xlab="PC #",ylab="Proportion of Variation")
-lines(1:14,pc.cumprop,lty=3)
+plot(1:11,pc.prop,type="l",main="Scree Plot",ylim=c(0,1),xlab="PC #",ylab="Proportion of Variation")
+lines(1:11,pc.cumprop,lty=3)
 
 #Use ggplot2 to plot the first few pc's
 ggplot(data = pc.scores, aes(x = PC1, y = PC2)) +  geom_point(aes(col=FRACTURE), size=1)+ geom_hline(yintercept = 0, colour = "gray65") +  geom_vline(xintercept = 0, colour = "gray65") +  ggtitle("PCA plot of Osteo Study")
@@ -207,19 +209,36 @@ ggplot(data = pc.scores, aes(x = PC1, y = PC3)) +  geom_point(aes(col=FRACTURE),
 
 ggplot(data = pc.scores, aes(x = PC2, y = PC3)) +  geom_point(aes(col=FRACTURE), size=1)+ geom_hline(yintercept = 0, colour = "gray65") +  geom_vline(xintercept = 0, colour = "gray65") +  ggtitle("PCA plot of Osteo Study")
 
+```
+##Clustering
 
+```{r}
 #Lets look at a heatmap using hierarchical clustering to see if the 
 #response naturually clusters out using the predictors
   
 #Transposting the predictor matrix and giving the response categories its
 #row names.
+datasetHM <- read.csv("C:/Users/carol/OneDrive/Documents/MSDS6372/Proj2/glow500.csv", sep=",", stringsAsFactors = TRUE, header=TRUE)
+str(dataset)
+
+# list rows of data that have missing values 
+datasetHM[!complete.cases(datasetHM),]
+# create new dataset without missing data 
+datasetHM <- na.omit(datasetHM)
+
+#remove FRACSCORE feature
+drops <- c("SITE_ID", "PHY_ID","FRACSCORE")
+datasetHM <- datasetHM[ , !(names(datasetHM) %in% drops)]
+attach(datasetHM)
 
 library(RColorBrewer)
 x<-t(dat.train.x)
 colnames(x)<-dat.train.y
 pheatmap(x,annotation_col=data.frame(FRACTURE=dat.train.y),scale="row",legend=T,color=colorRampPalette(c("blue","white", "red"), space = "rgb")(100))
 
- 
+detach(datasetHM)
+
+attach(dataset) 
 #glmnet requires a matrix 
 dat.train.x <- as.matrix(dat.train.x)
 library(glmnet)
