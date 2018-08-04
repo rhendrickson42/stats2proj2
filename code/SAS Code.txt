@@ -1,0 +1,68 @@
+/* .csv file type */ 
+proc import datafile="/home/carollr0/DataSets/glow500.csv"  
+      out=dataset replace dbms=csv; 
+run; 
+ 
+ 
+/* remove FRACSCORE and ID columns*/ 
+data work.dataset; 
+set dataset; 
+drop FRACSCORE SUB_ID PHY_ID SITE_ID ; 
+run; 
+ 
+proc print data=work.dataset; run; 
+ 
+/*Table Attributes */ 
+ods noproctitle; 
+ods select attributes variables; 
+ 
+proc datasets; 
+    contents data=WORK.DATASET order=collate; 
+quit; 
+ 
+proc print data=work.dataset; run; 
+ 
+/*EDA*/ 
+proc means data=dataset n mean median std var min max maxdec=2; 
+VAR AGE SMOKE PRIORFRAC RATERISK MOMFRAC PREMENO ARMASSIST 
+BMI  
+HEIGHT  
+WEIGHT; 
+run; 
+ 
+/*"Use the proc freq and proc means procedures to explore if any relationships that exist between the response,  
+disease status, and the potential risk factors. "*/ 
+ 
+proc freq data=work.dataset; 
+tables  
+FRACTURE*ARMASSIST  
+FRACTURE*MOMFRAC  
+FRACTURE*PREMENO  
+FRACTURE*PRIORFRAC  
+FRACTURE*RATERISK  
+FRACTURE*SMOKE  
+/ chisq relrisk; 
+RUN; QUIT; 
+ 
+proc means data=work.dataset; 
+class FRACTURE PRIORFRAC RATERISK MOMFRAC PREMENO ARMASSIST; 
+types FRACTURE FRACTURE*PRIORFRAC FRACTURE*RATERISK FRACTURE*MOMFRAC FRACTURE*PREMENO FRACTURE*ARMASSIST; 
+var AGE; 
+run; 
+ 
+ 
+ 
+proc corr data=work.dataset plots=matrix(histogram); 
+      var FRACTURE AGE SMOKE PRIORFRAC RATERISK MOMFRAC PREMENO ARMASSIST 
+BMI  
+HEIGHT  
+WEIGHT; 
+      run; 
+       
+ 
+*Simple proc logistic call to play around with; 
+proc logistic data=work.dataset ; 
+class SMOKE PRIORFRAC RATERISK MOMFRAC PREMENO ARMASSIST / param=ref; 
+model FRACTURE(event='1')= AGE/ scale=none aggregate influence lackfit; 
+run; 
+ 
