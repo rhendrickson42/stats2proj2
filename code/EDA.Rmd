@@ -19,11 +19,11 @@ library(ROCR)
 library(MASS)
 library(pheatmap)
 library(randomForest)
-
-load.libraries <- c('data.table', 'testthat', 'gridExtra', 'corrplot', 'GGally', 'ggplot2', 'e1071', 'dplyr')
-install.lib <- load.libraries[!load.libraries %in% installed.packages()]
-for(libs in install.lib) install.packages(libs, dependences = TRUE)
-sapply(load.libraries, require, character = TRUE)
+library(gmodels)
+library(vcd)
+library(Amelia)
+library(e1071)
+library(corrplot)
 ```
 ##Data Set 1: Osteoporosis in Women
 
@@ -44,14 +44,21 @@ provides definitions to the variables.
 
 The Global Longitudinal Study of Osteoporosis in Women (GLOW) (2005-2014) was a prospective cohort study of physician practices in the provision of prophylaxis and treatment against osteoporotic fractures. The goal of this research was to improve understanding of the risk and prevention of osteoporosis-related fractures among female residents of 10 countries who were 55 years of age and older. GLOW enrolled over 60,000 women through over 700 physicians in 10 countries, and conducted annual follow-up for up to 5 years through annual patient questionnaires.
 
-## Setup: Data Import and Cleaning
-
+#Setup: 
+## Data Import and Cleaning
+<p>Missing values were not detected in dataset. Special characters were removed from column headings.
+<br>What we know/don't know about the sample (500): 
+1. We do not know if the subjects are distributed equally around the world. We will assume that the same percentage from each region was selected for the sample in this dataset.
+2. Based on the Sub_ID(Subject ID), we can assume that the datat is independent sample of participants.
+3. 
+</p>
 ```{r}
 
-dataset <- read.csv("C:/Users/carol/OneDrive/Documents/MSDS6372/Proj2/glow500.csv", sep=",", stringsAsFactors = TRUE, header=TRUE)
+dataset <- read.csv("C:/Users/carol/OneDrive/Documents/MSDS6372/Proj2/glow500.csv", sep=",", stringsAsFactors = TRUE, header=TRUE,na.strings=c(""))
 
 # List rows of data that have missing values 
 Missing_values <- dataset[!complete.cases(dataset),]
+
 # Create new dataset without missing data 
 dataset <- na.omit(dataset)
 
@@ -59,230 +66,188 @@ dataset <- na.omit(dataset)
 drops <- c("FRACSCORE")
 dataset <- dataset[ , !(names(dataset) %in% drops)]
 
-#Rename columns
+#Cleanup column names
 colnames(dataset)[colnames(dataset)=="ï..SUB_ID"] <- "SUB_ID"
-View(dataset)
 ```
 ## Grouping Variables as Continuous, Categorical, and ID
 ```{r}
-cont_var <- dataset[,5:8]
-categoricalvar <- dataset[ ,-c(4,9:13)]
+numericVar <- dataset[,5:8]
 ID_var <- dataset[,c(1:3)]
+set_noID <- dataset[4:14]
+categoricalVar <- set_noID[,-c(2:5)]
 ```
 
-##Create a vector of all categorical variables
+##Create a vector of all categorical variables and run frequency 2X2s with Mosaic plots.
+<p>Chi-Square Test
+<br>For the 2-way tables the chisq test independence will show if 2 categorical variables are related in some population. 
+<br>Null Hypothesis: The two categorical variables are independent.
+<br>Alternative Hypothesis: The two categorical variables are dependent
+
+<br>Variable: PRIORFRAC
+41% of subjects with Prior Franctures also had current Fractures but only make up 25% of the overall subjects in the sample that had prior fractures. The Chi-squared p-value favors overwhemingly the alternative hypothesis that the PRIORFRAC variable is dependent on Fracture variable.
+
+<br>Variable: PREMENO
+80% of the sample subjects are not in Pre-Menopausehad of which 24% had fractures. The same frequency of 25% Premenopausal women had fractures. The Chi-squared p-value favors the null hypothesis that the PREMENO variable is independent on Fracture variable.
+
+<br>Variable: MOMFRAC
+13% of subjects have Mothers with a history of fractures. Out of those 13%, 36% of subjects also had fractures. The Chi-squared p-value favors the alternative hypothesis that the MOMFRAC variable is probably dependent on Fracture variable.
+
+<br>Variable: ARMASSIST
+62% (312/500) subjects do not have Armassist of which 20% had fractures. Of those with Armassist, 33% had fractures. The Chi-squared p-value favors the alternative hypothesis that the ARMASSIST variable is most likely dependent on Fracture variable.
+
+<br>Variable: SMOKE
+In the dataset, 93% of subjects are non-smokers of which 26% had fractures. 7% of the subjects who were smokers of which 26% had no fractures. Although the subjects are not balance in smoker vs non-smoker category, the p-value for Chi-squared test shows .47 we favor the alternative hypothesis that the Smoke variable is dependent on the Fracture. 
+
+<br>Variable: RATERISK 
+Raterisk shows the frequency of subjects in each Raterisk level is between 29%-33%. This is pretty even in terms of how many subjects are within each Raterisk. For those that did have Fractures, their probability of a fracture increased with the level of Raterisk. This makes sense. </p>
 ```{r}
-library(gmodels)
-library(vcd)
-categoricalvarvec  <- c("PRIORFRAC","PREMENO","MOMFRAC","ARMASSIST","SMOKE","RATERISK")
-for(categoricalvar in categoricalvarvec){ 
-  CrossTable(dataset[ , categoricalvar], dataset$FRACTURE, chisq = T) 
-  mosaicplot(CrossTable(dataset[ ,categoricalvar], dataset$FRACTURE)$t, main=paste("FRACTURE vs",categoricalvar, setp=" "), xlab=categoricalvar, ylab= "FRACTURE", color=T)
+categoricalVarVec  <- c("PRIORFRAC","PREMENO","MOMFRAC","ARMASSIST","SMOKE","RATERISK")
+for(categoricalVar in categoricalVarVec){ 
+  CrossTable(dataset[,categoricalVar], dataset$FRACTURE, chisq = TRUE , expected = TRUE, dnn=c(categoricalVar,"FRACTURE")) 
+  mosaicplot(CrossTable(dataset[ ,categoricalVar], dataset$FRACTURE)$t, main=paste("FRACTURE vs",categoricalVar, sep=" "), xlab=categoricalVar, ylab= "FRACTURE", color=T)
 }
 ```
-## Setup: Train / Test
-### Training set will be 70% of dataset and Test set will be remaining 30%
-```{r include=FALSE}
 
-smp_size <- floor(0.70 * nrow(cont_var))
-set.seed(1234)
-train_ind <-sample(seq_len(nrow(cont_var)), size=smp_size)
-test <-cont_var[-train_ind,]
-train <-cont_var[train_ind,]
+#  Exploratory Data Analysis
+## Summary Tables
+<p>Assumptions
+This is a prospective study which means its a study over time of a group of similar individuals who differ with respect to certain factors under a study and how these factors affect rates of a certain outcome (Fracture vs No-Fracture)
+Linearity - 
 
-```
+Independence of errors - Based on SUB_ID(Subject ID) we confirm each record is an independent sample.
+Multicollinearity - Weight and BMI are highly correlated.
+```{r fig.height=12, fig.width=10}
+# display the first 20 rows
+print(head(dataset, n=20))
 
-##  Exploratory Data Analysis
-### Summary Tables
-```{r}
+# display the dimensions of the dataset
+print(dim(dataset))
 
-sapply(dataset, class)
-dim(dataset)
+# list types for each attribute
+print(sapply(dataset,class))
+
+# summarize the dataset
+print(summary(set_noID))
+
+# Standard Deviations for the non-categorical columns
+std=sapply(set_noID,sd) 
+print('The standard deviations are:')
+print(std)
+
+# Skewness
+#The further the distribution of the skew value from zero, 
+# the larger the skew to the left (negative skew value) or right (positive skew value).
+#library(e1071) # the library for skewness
+library(e1071)
+skew=apply(set_noID[,c(1:11)], 2, skewness) 
+print(skew)
 
 
-attach(cont_var)
+# Correlations
+library(corrplot)
+#Full dataset without ID columns
+corrplot(cor(set_noID), method = "number", type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45,main="Correlation - Full Dataset")
+#Training data set without ID columns
+corrplot(cor(set_noID), method = "number", type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45, main="Correlation - Training Dataset")
 
-#Summary of Raw Dataset Continuous variables
-train_ind <-which(sapply(cont_var,is.numeric))
-tab.cont<-c()
 
-for (i in train_ind){
-  tab.cont<-rbind(tab.cont,summary(cont_var[,i]))
+# Data visualizations %%%%%%
+dataset_numeric = numericVar
+#Histograms
+par(mfrow=c(3,4)) # put four figures in a row (2*4)
+for (i in 1:4) {
+  hist(dataset_numeric[,i],main=names(dataset_numeric)[i])
 }
-rownames(tab.cont)<-names(cont_var)[train_ind]
-View(tab.cont)
-tab.cont
-
-
-index<-which(sapply(cont_var,is.numeric))
-tab.cont<-c()
-
-for (i in train_ind){
-  tab.cont <-rbind(tab.cont,summary(cont_var[,i]))
+#Density Plots
+par(mfrow=c(3,4))
+for(i in 1:4) {
+  plot(density(dataset_numeric[,i]), main=names(dataset_numeric)[i])
 }
-rownames(tab.cont)<-names(cont_var)[train_ind]
-View(tab.cont)
-tab.cont
-attach(cont_var)
-
-#Summary of Train data Continuous variables
-train_ind <-which(sapply(train,is.numeric))
-tab.cont.train<-c()
-
-for (i in train_ind){
-  tab.cont.train<-rbind(tab.cont.train,summary(train[,i]))
+#Box And Whisker Plots
+par(mfrow=c(3,4))
+for(i in 1:4) {
+  boxplot(dataset_numeric[,i], main=names(dataset_numeric)[i])
 }
-rownames(tab.cont.train)<-names(train)[train_ind]
-View(tab.cont.train)
-tab.cont.train
-
-
-index<-which(sapply(train,is.numeric))
-tab.cont.train<-c()
-
-for (i in train_ind){
-  tab.cont.train <-rbind(tab.cont.train,summary(train[,i]))
-}
-rownames(tab.cont.train)<-names(train)[train_ind]
-View(tab.cont.train)
-tab.cont.train
-
-#Summary of Test data Continuous variables
-train_ind <-which(sapply(test,is.numeric))
-tab.cont.test<-c()
-
-for (i in train_ind){
-  tab.cont.test<-rbind(tab.cont.test,summary(test[,i]))
-}
-rownames(tab.cont.test)<-names(test)[train_ind]
-View(tab.cont.test)
-tab.cont.test
-
-
-index<-which(sapply(test,is.numeric))
-tab.cont.test<-c()
-
-for (i in train_ind){
-  tab.cont.test <-rbind(tab.cont.test,summary(test[,i]))
-}
-rownames(tab.cont.test)<-names(test)[train_ind]
-View(tab.cont.test)
-tab.cont.test
-
- 
-#Sanity check make sure it is spilt roughly 50/50 in categorical and continous variables
-prop.table(table(dataset$PRIORFRAC))
-prop.table(table(dataset$PREMENO))
-prop.table(table(dataset$ARMASSIST))
-prop.table(table(dataset$SMOKE))
-prop.table(table(dataset$MOMFRAC))
-
-prop.table(table(dataset$AGE))
-prop.table(table(dataset$BMI))
-prop.table(table(dataset$HEIGHT))
-prop.table(table(dataset$WEIGHT))
-
-
-#Frequency tables
-
-count(dataset,'AGE')
-count(dataset,'BMI')
-count(dataset,'HEIGHT')
-count(dataset,'WEIGHT')
-count(dataset,'PRIORFRAC')
-count(dataset,'PREMENO')
-count(dataset,'MOMFRAC')
-count(dataset,'SMOKE')
-count(dataset,'RATERISK')
-
-```
-###Correlation
-# Use correlation plots to see which continuous variables are
-# highly correlated and need to be focused on
-
-```{r}
-#Correlation
-cor.mat <-cor(dataset[,index])
-cor.mat
-
-#These are the correlations of each predictor to FRACTURE
-attach(dataset)
-sort(cor.mat[11,])
-plot(PRIORFRAC,FRACTURE)
-plot(AGE,FRACTURE)
-plot(WEIGHT,FRACTURE)
-plot(HEIGHT,FRACTURE)
-plot(BMI,FRACTURE)
-plot(PREMENO,FRACTURE)
-plot(MOMFRAC,FRACTURE)
-plot(ARMASSIST,FRACTURE)
-plot(SMOKE,FRACTURE)
-plot(RATERISK,FRACTURE)
-
-Numeric_Vars <- dataset[,sapply(dataset, is.integer)]
-
-colnames(Numeric_Vars)
-
-library("corrplot")
-
-corrplot(cor(Numeric_Vars), method = "number", type = "upper", order = "hclust", 
-         tl.col = "black", tl.srt = 45)
-
-
-
-library(gridExtra)
-theme_set(theme_light())
-
-
-WEIGHT <- ggplot(dataset, aes(x = FRACTURE, y = WEIGHT)) +
-               geom_boxplot() + coord_flip()
-
-HEIGHT <- ggplot(dataset, aes(x = FRACTURE, y = HEIGHT)) +
-               geom_boxplot() + coord_flip()
-
-BMI <- ggplot(dataset, aes(x = FRACTURE, y = BMI)) +
-                    geom_boxplot() + coord_flip()
-
-AGE <- ggplot(dataset, aes(x = FRACTURE, y = AGE)) +
-       geom_boxplot() + coord_flip()
-
-grid.arrange(WEIGHT,
-             HEIGHT, BMI,
-             AGE,
-             nrow = 3)
-attach(dataset)
-
-#Correlation plots
-pairs(dataset[,1:11])
+#Barplots, which is used to count the accurances for categorical attributes 
+dataset_categorical = set_noID[,-c(2:5)]
 par(mfrow=c(1,3))
-plot(dataset$WEIGHT,dataset$HEIGHT)
-plot(dataset$AGE,dataset$PRIORFRAC)
-plot(dataset$BMI,dataset$PREMENO)
-plot(dataset$SMOKE,dataset$RATERISK)
-plot(dataset$FRACTURE,dataset$RATERISK)
-
-#Plotting data via ggplot2
-mysummary <-function(x){
-  result<-c(length(x),mean(x),sd(x),sd(x)/length(x))
-  names(result)<-c("N","Mean","SD","SE")
-  return(result)
+for(i in 1:7) {
+  counts <- table(dataset_categorical[,i]) # get the count for each categorical value
+  name <- names(dataset_categorical)[i]
+  barplot(counts, main=name)
 }
-sumstats<-aggregate(FRACTURE~RATERISK + PRIORFRAC,data=dataset,mysummary)
-sumstats<-cbind(sumstats[,1:2],sumstats[,-(1:2)])
-attach(sumstats)
 
-ggplot(sumstats,aes(x=sumstats$PRIORFRAC,y=Mean,group=RATERISK,colour=RATERISK)) + ylab("Osteo Score") + geom_line() + geom_point() + xlab("Prior Fracture") +  geom_errorbar(aes(ymin=sumstats$Mean-sumstats$SE,ymax=sumstats$Mean+sumstats$SE),width=.1)
+#Multivariate Visualization 
+library(corrplot) # for function corrplot()
+correlations1=cor(dataset_numeric)
+print(correlations1)
+par(mfrow=c(1,1))
+corrplot(correlations1, methods="circle")
 
+# pair-wise scatterplots of the numeric attributes
+par(mfrow=c(1,1))
+pairs(dataset_numeric)
+#Scatterplot Matrix By Class (use different color to distinguish different class)
+par(mfrow=c(1,1))
+pairs(dataset_numeric, col=dataset[,5])
 
-detach(dataset)
+#Density By Class
+library(caret)
+# load the data
+data(iris)
+# density plots for each attribute by class value
+x <- dataset_numeric
+y <- dataset[,5]
+scales <- list(x=list(relation="free"), y=list(relation="free"))
+par(mfrow=c(1,1))
+featurePlot(x=dataset_numeric, y=dataset[,5], plot="density", scales=scales)
+#Box And Whisker Plots By Class
+featurePlot(x=dataset_numeric, y=dataset[,5], plot="box")
+
 ```
-##PCA
+#Logistic Regression
+## Train / Test
+<p>Training set will be 70% of dataset and Test set will be remaining 30%</p>
+```{r}
+#smp_size <- floor(0.70 * nrow(dataset))
+#set.seed(1234)
+#train_ind <-sample(seq_len(nrow(dataset)), size=smp_size)
+#test <-dataset[-train_ind,]
+#train <-dataset[train_ind,]
 
+
+
+# split the data into training and validation sets
+library(caret)
+set.seed(84)
+validation_index = createDataPartition(dataset$FRACTURE, p=0.75, list=FALSE)
+validationData = set_noID[-validation_index,]
+trainingData = set_noID[validation_index,]
+
+#check for Missing Data
+sapply(trainingData,function(x) sum(is.na(x)))
+sapply(trainingData, function(x) length(unique(x)))
+missmap(trainingData, main = "Missing values vs observed") #library(Amelia)
+
+```
+##Build Model
+<p>Question of Interest?
+What are the odds of getting a fracture, given certain conditions?</p> 
+```{r}
+set.seed(84)
+model <- glm(FRACTURE~.,family = "binomial" (link='logit'), data=set_noID)
+model
+summary(model)
+```
+<p>Interpretation of logistic regression model:
+Weight, height, BMI, Premeno, Armassist, and Smoke are not statistically significant variables. Priorfrac and Age are statistically significant variables and have the lowest p-value indicating a strong association with having a Fracture. 
 ```{r}
 ##glmnet
-dat <- dataset
+dat <- categoricalVar
 #Get Training Set
-dat.train <- train
+dat.train <- trainingData
 
 dat.train.x <- dat.train[,1:ncol(dat.train)]
 dat.train.y <- dat.train$FRACTURE
@@ -298,13 +263,12 @@ pc.scores$FRACTURE<-dat.train.y
 PCA <- pc.result$rotation
 PCA
 
-
 #Scree plot
 pc.eigen<-(pc.result$sdev)^2
 pc.prop<-pc.eigen/sum(pc.eigen)
 pc.cumprop<-cumsum(pc.prop)
 plot(1:11,pc.prop,type="l",main="Scree Plot",ylim=c(0,1),xlab="PC #",ylab="Proportion of Variation")
-lines(1:11,pc.cumprop,lty=3)
+ lines(1:11,pc.cumprop,lty=3)
 
 #Use ggplot2 to plot the first few pc's
 ggplot(data = pc.scores, aes(x = PC1, y = PC2)) +  geom_point(aes(col=FRACTURE), size=1)+ geom_hline(yintercept = 0, colour = "gray65") +  geom_vline(xintercept = 0, colour = "gray65") +  ggtitle("PCA plot of Osteo Study")
@@ -312,7 +276,6 @@ ggplot(data = pc.scores, aes(x = PC1, y = PC2)) +  geom_point(aes(col=FRACTURE),
 ggplot(data = pc.scores, aes(x = PC1, y = PC3)) +  geom_point(aes(col=FRACTURE), size=1)+ geom_hline(yintercept = 0, colour = "gray65") +  geom_vline(xintercept = 0, colour = "gray65") +  ggtitle("PCA plot of Osteo Study")
 
 ggplot(data = pc.scores, aes(x = PC2, y = PC3)) +  geom_point(aes(col=FRACTURE), size=1)+ geom_hline(yintercept = 0, colour = "gray65") +  geom_vline(xintercept = 0, colour = "gray65") +  ggtitle("PCA plot of Osteo Study")
-
 ```
 ##Clustering
 
@@ -322,51 +285,15 @@ ggplot(data = pc.scores, aes(x = PC2, y = PC3)) +  geom_point(aes(col=FRACTURE),
   
 #Transposting the predictor matrix and giving the response categories its
 #row names.
-datasetHM <- read.csv("C:/Users/carol/OneDrive/Documents/MSDS6372/Proj2/glow500.csv", sep=",", stringsAsFactors = TRUE, header=TRUE)
-str(dataset)
-
-# list rows of data that have missing values 
-datasetHM[!complete.cases(datasetHM),]
-# create new dataset without missing data 
-datasetHM <- na.omit(datasetHM)
-attach(datasetHM)
-#remove FRACSCORE feature
-drops <- c("SITE_ID", "PHY_ID","FRACSCORE")
-datasetHM <- datasetHM[ , !(names(datasetHM) %in% drops)]
-
 library(RColorBrewer)
 x<-t(dat.train.x)
 colnames(x)<-dat.train.y
 pheatmap(x,annotation_col=data.frame(FRACTURE=dat.train.y),scale="row",legend=T,color=colorRampPalette(c("blue","white", "red"), space = "rgb")(100))
 
-detach(datasetHM)
 
-attach(dataset) 
-#glmnet requires a matrix 
 ##logistic regression
 dat.train.x <- as.matrix(dat.train.x)
 library(glmnet)
 cvfit <- cv.glmnet(dat.train.x, dat.train.y, family = "binomial", type.measure = "class", nlambda = 1000)
 plot(cvfit)
 coef(cvfit, s = "lambda.min")
-
-#Get training set predictions...We know they are biased but lets create ROC's.
-#These are predicted probabilities from logistic model  exp(b)/(1+exp(b))
-fit.pred <- predict(cvfit, newx = dat.train.x, type = "response")
-
-#Compare the prediction to the real outcome
-head(fit.pred)
-head(dat.train.y)
-
-#Create ROC curves
-pred <- prediction(fit.pred[,1], dat.train.y)
-roc.perf = performance(pred, measure = "tpr", x.measure = "fpr")
-auc.train <- performance(pred, measure = "auc")
-auc.train <- auc.train@y.values
-
-#Plot ROC
-plot(roc.perf)
-abline(a=0, b= 1) #Ref line indicating poor performance
-text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
-
-```
