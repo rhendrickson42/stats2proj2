@@ -19,6 +19,11 @@ library(ROCR)
 library(MASS)
 library(pheatmap)
 library(randomForest)
+
+load.libraries <- c('data.table', 'testthat', 'gridExtra', 'corrplot', 'GGally', 'ggplot2', 'e1071', 'dplyr')
+install.lib <- load.libraries[!load.libraries %in% installed.packages()]
+for(libs in install.lib) install.packages(libs, dependences = TRUE)
+sapply(load.libraries, require, character = TRUE)
 ```
 ##Data Set 1: Osteoporosis in Women
 
@@ -44,57 +49,156 @@ The Global Longitudinal Study of Osteoporosis in Women (GLOW) (2005-2014) was a 
 ```{r}
 
 dataset <- read.csv("C:/Users/carol/OneDrive/Documents/MSDS6372/Proj2/glow500.csv", sep=",", stringsAsFactors = TRUE, header=TRUE)
-str(dataset)
 
-# list rows of data that have missing values 
-dataset[!complete.cases(dataset),]
-# create new dataset without missing data 
+# List rows of data that have missing values 
+Missing_values <- dataset[!complete.cases(dataset),]
+# Create new dataset without missing data 
 dataset <- na.omit(dataset)
 
-#remove FRACSCORE feature
-drops <- c("ï..SUB_ID","SITE_ID", "PHY_ID","FRACSCORE")
+#remove FRACSCORE feature per professor Turner
+drops <- c("FRACSCORE")
 dataset <- dataset[ , !(names(dataset) %in% drops)]
 
+#Rename columns
+colnames(dataset)[colnames(dataset)=="ï..SUB_ID"] <- "SUB_ID"
+View(dataset)
+```
+## Grouping Variables as Continuous, Categorical, and ID
+```{r}
+cont_var <- dataset[,5:8]
+categoricalvar <- dataset[ ,-c(4,9:13)]
+ID_var <- dataset[,c(1:3)]
 ```
 
+##Create a vector of all categorical variables
+```{r}
+library(gmodels)
+library(vcd)
+categoricalvarvec  <- c("PRIORFRAC","PREMENO","MOMFRAC","ARMASSIST","SMOKE","RATERISK")
+for(categoricalvar in categoricalvarvec){ 
+  CrossTable(dataset[ , categoricalvar], dataset$FRACTURE, chisq = T) 
+  mosaicplot(CrossTable(dataset[ ,categoricalvar], dataset$FRACTURE)$t, main=paste("FRACTURE vs",categoricalvar, setp=" "), xlab=categoricalvar, ylab= "FRACTURE", color=T)
+}
+```
 ## Setup: Train / Test
-
+### Training set will be 70% of dataset and Test set will be remaining 30%
 ```{r include=FALSE}
 
+smp_size <- floor(0.70 * nrow(cont_var))
 set.seed(1234)
-train <- nrow(dataset) * .70
-index<-sample(1:500,train,replace=FALSE)
-test<-dataset[-index,]
-train<-dataset[index,]
+train_ind <-sample(seq_len(nrow(cont_var)), size=smp_size)
+test <-cont_var[-train_ind,]
+train <-cont_var[train_ind,]
 
 ```
 
 ##  Exploratory Data Analysis
-### Summary
+### Summary Tables
 ```{r}
-attach(dataset)
-summary(dataset)
 
-#create an nicer summary table
-index<-which(sapply(dataset,is.numeric))
+sapply(dataset, class)
+dim(dataset)
+
+
+attach(cont_var)
+
+#Summary of Raw Dataset Continuous variables
+train_ind <-which(sapply(cont_var,is.numeric))
 tab.cont<-c()
 
-for (i in index){
-  tab.cont<-rbind(tab.cont,summary(dataset[,i]))
+for (i in train_ind){
+  tab.cont<-rbind(tab.cont,summary(cont_var[,i]))
 }
-rownames(tab.cont)<-names(dataset)[index]
+rownames(tab.cont)<-names(cont_var)[train_ind]
 View(tab.cont)
 tab.cont
 
-#Sanity check make sure it is spilt roughly 50/50
+
+index<-which(sapply(cont_var,is.numeric))
+tab.cont<-c()
+
+for (i in train_ind){
+  tab.cont <-rbind(tab.cont,summary(cont_var[,i]))
+}
+rownames(tab.cont)<-names(cont_var)[train_ind]
+View(tab.cont)
+tab.cont
+attach(cont_var)
+
+#Summary of Train data Continuous variables
+train_ind <-which(sapply(train,is.numeric))
+tab.cont.train<-c()
+
+for (i in train_ind){
+  tab.cont.train<-rbind(tab.cont.train,summary(train[,i]))
+}
+rownames(tab.cont.train)<-names(train)[train_ind]
+View(tab.cont.train)
+tab.cont.train
+
+
+index<-which(sapply(train,is.numeric))
+tab.cont.train<-c()
+
+for (i in train_ind){
+  tab.cont.train <-rbind(tab.cont.train,summary(train[,i]))
+}
+rownames(tab.cont.train)<-names(train)[train_ind]
+View(tab.cont.train)
+tab.cont.train
+
+#Summary of Test data Continuous variables
+train_ind <-which(sapply(test,is.numeric))
+tab.cont.test<-c()
+
+for (i in train_ind){
+  tab.cont.test<-rbind(tab.cont.test,summary(test[,i]))
+}
+rownames(tab.cont.test)<-names(test)[train_ind]
+View(tab.cont.test)
+tab.cont.test
+
+
+index<-which(sapply(test,is.numeric))
+tab.cont.test<-c()
+
+for (i in train_ind){
+  tab.cont.test <-rbind(tab.cont.test,summary(test[,i]))
+}
+rownames(tab.cont.test)<-names(test)[train_ind]
+View(tab.cont.test)
+tab.cont.test
+
+ 
+#Sanity check make sure it is spilt roughly 50/50 in categorical and continous variables
 prop.table(table(dataset$PRIORFRAC))
 prop.table(table(dataset$PREMENO))
 prop.table(table(dataset$ARMASSIST))
 prop.table(table(dataset$SMOKE))
 prop.table(table(dataset$MOMFRAC))
 
+prop.table(table(dataset$AGE))
+prop.table(table(dataset$BMI))
+prop.table(table(dataset$HEIGHT))
+prop.table(table(dataset$WEIGHT))
+
+
+#Frequency tables
+
+count(dataset,'AGE')
+count(dataset,'BMI')
+count(dataset,'HEIGHT')
+count(dataset,'WEIGHT')
+count(dataset,'PRIORFRAC')
+count(dataset,'PREMENO')
+count(dataset,'MOMFRAC')
+count(dataset,'SMOKE')
+count(dataset,'RATERISK')
+
 ```
 ###Correlation
+# Use correlation plots to see which continuous variables are
+# highly correlated and need to be focused on
 
 ```{r}
 #Correlation
@@ -212,7 +316,7 @@ ggplot(data = pc.scores, aes(x = PC2, y = PC3)) +  geom_point(aes(col=FRACTURE),
 ```
 ##Clustering
 
-```{r}
+```{r fig.width=12}
 #Lets look at a heatmap using hierarchical clustering to see if the 
 #response naturually clusters out using the predictors
   
@@ -225,11 +329,10 @@ str(dataset)
 datasetHM[!complete.cases(datasetHM),]
 # create new dataset without missing data 
 datasetHM <- na.omit(datasetHM)
-
+attach(datasetHM)
 #remove FRACSCORE feature
 drops <- c("SITE_ID", "PHY_ID","FRACSCORE")
 datasetHM <- datasetHM[ , !(names(datasetHM) %in% drops)]
-attach(datasetHM)
 
 library(RColorBrewer)
 x<-t(dat.train.x)
@@ -240,6 +343,7 @@ detach(datasetHM)
 
 attach(dataset) 
 #glmnet requires a matrix 
+##logistic regression
 dat.train.x <- as.matrix(dat.train.x)
 library(glmnet)
 cvfit <- cv.glmnet(dat.train.x, dat.train.y, family = "binomial", type.measure = "class", nlambda = 1000)
