@@ -149,7 +149,13 @@ library(corrplot)
 corrplot(cor(set_noID), method = "number", type = "upper", order = "hclust", 
          tl.col = "black", tl.srt = 45,main="Correlation - Full Dataset")
 #Training data set without ID columns
-corrplot(cor(set_noID), method = "number", type = "upper", order = "hclust", 
+#split the data into training and validation sets
+library(caret)
+set.seed(84)
+validation_index = createDataPartition(dataset$FRACTURE, p=0.75, list=FALSE)
+validationData = set_noID[-validation_index,]
+trainingData = set_noID[validation_index,]
+corrplot(cor(trainingData), method = "number", type = "upper", order = "hclust", 
          tl.col = "black", tl.srt = 45, main="Correlation - Training Dataset")
 
 
@@ -297,3 +303,4 @@ library(glmnet)
 cvfit <- cv.glmnet(dat.train.x, dat.train.y, family = "binomial", type.measure = "class", nlambda = 1000)
 plot(cvfit)
 coef(cvfit, s = "lambda.min")
+```
