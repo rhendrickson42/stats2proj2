@@ -24,6 +24,9 @@ library(vcd)
 library(Amelia)
 library(e1071)
 library(corrplot)
+library(rpart)
+library(ROSE)
+library(caret)
 ```
 ##Data Set 1: Osteoporosis in Women
 
@@ -68,6 +71,46 @@ dataset <- dataset[ , !(names(dataset) %in% drops)]
 
 #Cleanup column names
 colnames(dataset)[colnames(dataset)=="ï..SUB_ID"] <- "SUB_ID"
+
+#Change categorical variables to factors
+dataset$PRIORFRAC<- as.factor(dataset$PRIORFRAC)
+dataset$MOMFRAC<- as.factor(dataset$MOMFRAC)
+dataset$ARMASSIST<- as.factor(dataset$ARMASSIST)
+dataset$SMOKE<- as.factor(dataset$SMOKE)
+dataset$RATERISK<- as.factor(dataset$RATERISK)
+dataset$FRACTURE<- as.factor(dataset$FRACTURE)
+dataset$PREMENO<- as.factor(dataset$PREMENO)
+
+str(dataset)
+```
+#  Exploratory Data Analysis
+## Checking the Balance of the Full dataset
+<p>The current sample dataset containes a larger propotion of subjects that did not develop fracture. Building a model against this dataset could produce bias towards the majority class. 
+Below you will see how many subjects with(1)/without(0) Fractures as well as the proportion percentage for each. After splitting the dataset into training and validation(test) sets, we noticed the proportion of the training and test was not any better.
+<p>We fit a logistic model on the unbalanced training dataset with a threshold of .05. It shows a Precision of 1 which says there are no false positives. Recall equals 0.20 is low and indicates that we have higher number of false negatives. The F equals 0.20 is also low and suggests weak accuracy of this model.
+<p>We also plotted a ROC curve to visualize the model. The AUC equals 0.764 which is low and shows the data is not balanced.
+<p>We will attempt to balance the dataset in order to create a more balanced distribution of and  a better prediction.
+```{r}
+
+table(dataset$FRACTURE) 
+prop.table(table(dataset$FRACTURE))
+
+# split the data into training and validation sets
+set.seed(84)
+validation_index = createDataPartition(dataset$FRACTURE, p=0.75, list=FALSE)
+validationData = dataset[-validation_index,c(4:14)]
+trainingData = dataset[validation_index,c(4:14)]
+prop.table(table(validationData$FRACTURE))
+prop.table(table(trainingData$FRACTURE))
+
+#fit a logistic regressio to unblanced training set
+fit.dataset <- glm(formula=FRACTURE~ ., data = trainingData, family="binomial")
+pred.fit.dataset <- predict(fit.dataset, newdata = validationData, type="response")
+#Check Accuracy of fitted model.
+accuracy.meas(validationData$FRACTURE,pred.fit.dataset, threshold=.05)
+
+#Check Accuracy of Test dataset using ROC curve
+roc.curve(validationData$FRACTURE, pred.fit.dataset, plotit = TRUE)
 ```
 ## Grouping Variables as Continuous, Categorical, and ID
 ```{r}
@@ -107,15 +150,12 @@ for(categoricalVar in categoricalVarVec){
   mosaicplot(CrossTable(dataset[ ,categoricalVar], dataset$FRACTURE)$t, main=paste("FRACTURE vs",categoricalVar, sep=" "), xlab=categoricalVar, ylab= "FRACTURE", color=T)
 }
 ```
-
-#  Exploratory Data Analysis
 ## Summary Tables
 <p>Assumptions
 This is a prospective study which means its a study over time of a group of similar individuals who differ with respect to certain factors under a study and how these factors affect rates of a certain outcome (Fracture vs No-Fracture)
 Linearity - 
-
 Independence of errors - Based on SUB_ID(Subject ID) we confirm each record is an independent sample.
-Multicollinearity - Weight and BMI are highly correlated.
+Multicollinearity - Weight and BMI are highly correlated but we will remove one from the model.
 ```{r fig.width=10}
 # display the first 20 rows
 print(head(dataset, n=20))
@@ -186,10 +226,10 @@ for(i in 1:4) {
 #Barplots, which is used to count the accurances for categorical attributes 
 dataset_categorical = set_noID[,-c(2:5)]
 par(mfrow=c(1,3))
-for(i in 1:7) {
+for(i in 1:6) {
   counts <- table(dataset_categorical[,i]) # get the count for each categorical value
   name <- names(dataset_categorical)[i]
-  barplot(counts, main=name)
+  barplot(counts, main=name,col=c("lightblue","darkred"))
 }
 
 #Multivariate Visualization 
@@ -312,4 +352,22 @@ library(glmnet)
 cvfit <- cv.glmnet(dat.train.x, dat.train.y, family = "binomial", type.measure = "class", nlambda = 1000)
 plot(cvfit)
 coef(cvfit, s = "lambda.min")
+```
+##Creating a balanced dataset by Oversampling and check accuracy.
+```{r}
+library(ROSE)
+over <- ovun.sample(FRACTURE~.,data=validationData,method="over", N=200)$data
+table(over$FRACTURE)
+
+prop.table(table(over$FRACTURE))
+
+#fit a logistic regressio to unblanced training set
+fit.dataset <- glm(formula=FRACTURE~ ., data = over, family="binomial")
+pred.fit.dataset <- predict(fit.dataset, newdata = over, type="response")
+#Check Accuracy of fitted model.
+accuracy.meas(over$FRACTURE,pred.fit.dataset, threshold=.05)
+
+#Check Accuracy of Test dataset using ROC curve
+roc.curve(over$FRACTURE, pred.fit.dataset, plotit = TRUE)
+```
 ```
