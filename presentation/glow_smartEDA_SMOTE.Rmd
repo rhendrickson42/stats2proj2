@@ -1,0 +1,121 @@
+---
+title: "SmartEDA_Project2"
+author: "Randall Hendrickson"
+date: "August 5, 2018"
+output: 
+    html_document:
+      keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Use SmartEDA for some basic EDA, then use SMOTE to create balanced data
+
+```{r }
+library(here)
+library(knitr)
+library(kableExtra)
+
+glow_data_file <- here("data", "glow500.csv")
+glow <- read.csv(glow_data_file)
+
+#summary(glow)
+
+glow$PRIORFRAC <- factor(glow$PRIORFRAC, levels=c(0,1), labels=c("No","Yes"))
+glow$PREMENO <- factor(glow$PREMENO, levels=c(0,1), labels=c("No","Yes"))
+glow$MOMFRAC <- factor(glow$MOMFRAC, levels=c(0,1), labels=c("No","Yes"))
+glow$ARMASSIST <- factor(glow$ARMASSIST, levels=c(0,1), labels=c("No","Yes"))
+glow$SMOKE <- factor(glow$SMOKE, levels=c(0,1), labels=c("No","Yes"))
+glow$RATERISK <- factor(glow$RATERISK, levels=c(1,2,3), labels=c("Less","Same","Greater"))
+glow$FRACTURE <- factor(glow$FRACTURE, levels=c(0,1), labels=c("No","Yes"))
+
+#summary(glow)
+
+```
+
+```{r }
+library("ISLR")
+library("SmartEDA")
+
+# structure of data - Type = 1
+ExpData(data=glow,type=1)
+
+# structure of data - Type = 2
+ExpData(data=glow,type=2)
+
+```
+
+## use SMOTE to create a balanced dataset 
+
+```{r }
+library(DMwR)
+
+set.seed(2018)
+# now use SMOTE to create a balanced dataset, perc.over=100, perc.under=200 
+newGlow <- SMOTE(FRACTURE ~ ., glow, perc.over = 100)
+
+# check the class distribution for the datasets
+fracture<-c("No","Yes")
+# original glow
+tab1<-prop.table(table(glow$FRACTURE))
+df1<-data.frame(fracture=names(tab1), proportion=as.numeric(tab1))
+kable(df1)
+# SMOTEd glow
+tab2<-prop.table(table(newGlow$FRACTURE))
+df2<-data.frame(fracture=names(tab2), proportion=as.numeric(tab2))
+kable(df2)
+
+# summary of both datasets
+summary(glow)
+summary(newGlow)
+
+# save SMOTEd dataset - might need to convert back to factor codes
+glow_smoted_data_file <- here("data", "glow500_smoted.csv")
+write.csv(newGlow, file = glow_smoted_data_file, row.names = FALSE, quote = TRUE)
+
+ExpData(data=newGlow, type = 1)
+ExpData(data=newGlow, type = 2)
+
+# check visually the created data
+par(mfrow = c(1,2))
+plot(glow[,"AGE"], glow[,"WEIGHT"], pch=19 + as.integer(glow[, "FRACTURE"]), main="original glow")
+plot(newGlow[,"AGE"], newGlow[,"WEIGHT"], pch=19 + as.integer(newGlow[, "FRACTURE"]), main="SMOTEd glow")
+```
+
+## some modeling with original and SMOTEd datasets
+
+```{r }
+# not interesting due to all variables (i.e. SUB_ID, SITE_ID, PHY_ID)
+# model0 <- glm(FRACTURE ~ ., family = binomial, data = glow)
+# summary(model0)
+
+# order by continuous, then factor
+model1 <- glm(FRACTURE ~ AGE + WEIGHT + HEIGHT + BMI + PRIORFRAC + PREMENO + MOMFRAC + ARMASSIST + SMOKE + RATERISK, family = binomial, data = glow) 
+summary(model1)
+
+# drop height, bmi, momfrac, armassist, smoke
+model2 <- glm(FRACTURE ~ AGE + WEIGHT + PRIORFRAC + PREMENO + MOMFRAC + RATERISK, family = binomial, data = glow)
+summary(model2)
+
+# fit model2
+model2_fitted <- update(model2, . ~ . - WEIGHT - PREMENO - MOMFRAC)
+summary(model2_fitted)
+
+model2_smoted <- glm(FRACTURE ~ AGE + WEIGHT + PRIORFRAC + PREMENO + MOMFRAC + RATERISK, family = binomial, data = newGlow)
+summary(model2_smoted)
+
+model2_smoted_fitted <- update(model2_smoted, . ~ . - WEIGHT - PREMENO - MOMFRAC)
+summary(model2_smoted_fitted)
+
+# model some interactions
+#model3 <- glm(FRACTURE ~ AGE + AGE*PRIORFRAC + AGE*PREMENO + AGE*MOMFRAC + PRIORFRAC, family = binomial, data = glow)
+#summary(model3)
+
+vcov(model2_fitted)
+vcov(model2_smoted_fitted)
+
+```
+
+
