@@ -27,6 +27,16 @@ library(corrplot)
 library(rpart)
 library(ROSE)
 library(caret)
+
+usePackage <- function(p) {
+
+  if (!is.element(p, installed.packages()[,1]))
+
+    install.packages(p, dep = TRUE)
+
+  require(p, character.only = TRUE)
+
+}
 ```
 ##Data Set 1: Osteoporosis in Women
 
@@ -72,14 +82,7 @@ dataset <- dataset[ , !(names(dataset) %in% drops)]
 #Cleanup column names
 colnames(dataset)[colnames(dataset)=="ï..SUB_ID"] <- "SUB_ID"
 
-#Change categorical variables to factors
-dataset$PRIORFRAC<- as.factor(dataset$PRIORFRAC)
-dataset$MOMFRAC<- as.factor(dataset$MOMFRAC)
-dataset$ARMASSIST<- as.factor(dataset$ARMASSIST)
-dataset$SMOKE<- as.factor(dataset$SMOKE)
-dataset$RATERISK<- as.factor(dataset$RATERISK)
-dataset$FRACTURE<- as.factor(dataset$FRACTURE)
-dataset$PREMENO<- as.factor(dataset$PREMENO)
+
 
 str(dataset)
 ```
@@ -180,7 +183,7 @@ print(std)
 #library(e1071) # the library for skewness
 library(e1071)
 
-skew=apply(set_noID[,c(1:11)], 2, skewness) 
+skew=apply(numericVar, 2, skewness) 
 print(skew)
 
 # Correlations
@@ -198,6 +201,7 @@ set.seed(84)
 validation_index = createDataPartition(dataset$FRACTURE, p=0.75, list=FALSE)
 validationData = set_noID[-validation_index,]
 trainingData = set_noID[validation_index,]
+
 corrplot(cor(trainingData), method = "number", type = "upper", order = "hclust", 
          tl.col = "black", tl.srt = 45, main="Correlation - Training Dataset")
 
@@ -303,7 +307,7 @@ Weight, height, BMI, Premeno, Armassist, and Smoke are not statistically signifi
 dat <- categoricalVar
 
 #Get Training Set
-dat.train <- trainingData
+dat.train <- set_noID
 
 dat.train.x <- dat.train[,1:ncol(dat.train)]
 dat.train.y <- dat.train$FRACTURE
@@ -311,7 +315,7 @@ dat.train.y <- dat.train$FRACTURE
 dat.train.y <- as.factor(as.character(dat.train.y))
 
 #PCA
-pc.result<-prcomp(dat.train.x,scale.=TRUE)
+pc.result<-prcomp(dat.train.x,scale=TRUE)
 pc.scores<-pc.result$x
 pc.scores<-data.frame(pc.scores)
 pc.scores$FRACTURE<-dat.train.y
@@ -354,9 +358,15 @@ plot(cvfit)
 coef(cvfit, s = "lambda.min")
 ```
 ##Creating a balanced dataset by Oversampling and check accuracy.
+<p>Below we created a balanced dataset using ROSE package. The idea is that by creating an over sampled dataset with randomly duplicated records, we prodcued a more balanced dataset of subjects.
 ```{r}
 library(ROSE)
-over <- ovun.sample(FRACTURE~.,data=validationData,method="over", N=200)$data
+#Look at the proporation of subjecs with Fractures from the Full dataset.
+table(set_noID$FRACTURE)
+prop.table(table(set_noID$FRACTURE))
+
+#Create an oversampled dataset from Training dataset
+over <- ovun.sample(FRACTURE~.,data=trainingData,method="over", N=564)$data
 table(over$FRACTURE)
 
 prop.table(table(over$FRACTURE))
