@@ -23,7 +23,7 @@ Variable Name Type   #Unique
 
 ## Project Files
 
- - [Data](Data) - project data directory
+ - [Data](data) - project data directory
  
  Datasets:
  
