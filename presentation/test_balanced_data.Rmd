@@ -1,0 +1,106 @@
+---
+title: "test_balanced_data"
+author: "Randall Hendrickson"
+date: "August 10, 2018"
+output:
+    html_document:
+      keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(knitr)
+library(kableExtra)
+library("ISLR")
+library("SmartEDA")
+
+
+data_setup_script <- here("code", "data_functions.R")
+source(data_setup_script)
+```
+
+
+### Get Glow dataset
+
+```{r get_dataset}
+
+glow <- read_glow_dataset()
+
+# Glow SmartEDA - Type 1, 2
+ExpData(data=glow,type=1)
+ExpData(data=glow,type=2)
+
+```
+
+### get balanced glow dataset
+
+```{r}
+
+newGlow <- create_balanced_dataset_from_glow(glow)
+save_SMOTEd_dataset(newGlow,"glow500_smoted_2.csv")
+```
+
+### get proportions
+
+```{r get_proportions_and_summary}
+
+(df <- create_fracture_proportion(glow))
+(df <- create_fracture_proportion(newGlow))
+
+# summary of both datasets
+summary(glow)
+summary(newGlow)
+
+# SMOTEd Glow SmartEDA
+
+# SMOTEd Glow SmartEDA - Type 1, 2
+ExpData(data=newGlow,type=1)
+ExpData(data=newGlow,type=2)
+
+# check visually the created data
+par(mfrow = c(1,2))
+plot(glow[,"AGE"], glow[,"WEIGHT"], pch=19 + as.integer(glow[, "FRACTURE"]), main="original glow")
+plot(newGlow[,"AGE"], newGlow[,"WEIGHT"], pch=19 + as.integer(newGlow[, "FRACTURE"]), main="SMOTEd glow")
+```
+
+### basic modeling
+
+```{r basic_LR_modeling}
+
+## some modeling with original and SMOTEd datasets
+
+# not interesting due to all variables (i.e. SUB_ID, SITE_ID, PHY_ID)
+# model0 <- glm(FRACTURE ~ ., family = binomial, data = glow)
+# summary(model0)
+
+# order by continuous, then factor
+model1 <- glm(FRACTURE ~ AGE + WEIGHT + HEIGHT + BMI + PRIORFRAC + PREMENO + MOMFRAC + ARMASSIST + SMOKE + RATERISK, family = binomial, data = glow) 
+summary(model1)
+
+# drop height, bmi, momfrac, armassist, smoke
+model2 <- glm(FRACTURE ~ AGE + WEIGHT + PRIORFRAC + PREMENO + MOMFRAC + RATERISK, family = binomial, data = glow)
+summary(model2)
+
+# fit model2
+model2_fitted <- update(model2, . ~ . - WEIGHT - PREMENO - MOMFRAC)
+summary(model2_fitted)
+
+model2_smoted <- glm(FRACTURE ~ AGE + WEIGHT + PRIORFRAC + PREMENO + MOMFRAC + RATERISK, family = binomial, data = newGlow)
+summary(model2_smoted)
+
+model2_smoted_fitted <- update(model2_smoted, . ~ . - WEIGHT - PREMENO - MOMFRAC)
+summary(model2_smoted_fitted)
+
+# model some interactions
+#model3 <- glm(FRACTURE ~ AGE + AGE*PRIORFRAC + AGE*PREMENO + AGE*MOMFRAC + PRIORFRAC, family = binomial, data = glow)
+#summary(model3)
+
+vcov(model2_fitted)
+vcov(model2_smoted_fitted)
+
+```
+
+
+
