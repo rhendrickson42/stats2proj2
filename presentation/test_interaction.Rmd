@@ -1,0 +1,360 @@
+---
+title: "test_interaction_data"
+output:
+  html_document:
+    toc: yes
+    keep_md: yes
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+date: "August 10, 2018"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(knitr)
+library(kableExtra)
+library("ISLR")
+library("SmartEDA")
+
+
+data_setup_script <- here("code", "data_functions.R")
+source(data_setup_script)
+```
+
+
+### Get Glow dataset
+
+```{r get_dataset}
+
+glow <- read_glow_dataset()
+
+```
+
+### model interactions - main effects
+
+```
+model_z1 <- glm(FRACTURE ~ AGE, family = binomial, data = glow)
+model_z2 <- glm(FRACTURE ~ WEIGHT, family = binomial, data = glow)
+model_z3 <- glm(FRACTURE ~ HEIGHT, family = binomial, data = glow)
+model_z4 <- glm(FRACTURE ~ BMI, family = binomial, data = glow)
+model_z5 <- glm(FRACTURE ~ PRIORFRAC, family = binomial, data = glow)
+model_z6 <- glm(FRACTURE ~ PREMENO, family = binomial, data = glow)
+model_z7 <- glm(FRACTURE ~ MOMFRAC, family = binomial, data = glow)
+model_z8 <- glm(FRACTURE ~ ARMASSIST, family = binomial, data = glow)
+model_z9 <- glm(FRACTURE ~ SMOKE, family = binomial, data = glow)
+model_z10 <- glm(FRACTURE ~ RATERISK, family = binomial, data = glow)
+
+## AGE          0.05289    0.01163   4.548 5.42e-06 ***
+## WEIGHT      -0.005197   0.006415 -0.810    0.418
+## HEIGHT      -0.05167    0.01709  -3.022  0.00251 **
+## BMI          0.005758   0.017185  0.335  0.73760  
+## PRIORFRACYes 1.0638     0.2231    4.769 1.85e-06 ***
+## PREMENOYes   0.05077    0.25921   0.196    0.845  
+## MOMFRACYes   0.6605     0.2810    2.351   0.0187 *  
+## ARMASSISTYes 0.7091     0.2098    3.381 0.000723 ***
+## SMOKEYes    -0.3077     0.4358   -0.706     0.48    
+## RATERISKSame      0.5462     0.2664   2.050   0.0404 *  
+## RATERISKGreater   0.9091     0.2711   3.353   0.0008 ***
+
+> code below:
+```
+
+This leads us to consider the covariates above that are significant in the univariate results above at the 25% level.
+
+AGE, HEIGHT, PRIORFRAC, MOMFRAC, ARMASSIST, RATERISK {SAME, GREATER}
+
+```{r model_full_and_summary}
+
+# fit a univariate logistic regression model for each covariate
+# continuous - AGE WEIGHT HEIGHT BMI
+# categorical - PRIORFRAC PREMENO MOMFRAC ARMASSIST SMOKE RATERISK
+
+# model0
+#model_z1 <- glm(FRACTURE ~ AGE, family = binomial, data = glow)
+#model_z2 <- glm(FRACTURE ~ WEIGHT, family = binomial, data = glow)
+#model_z3 <- glm(FRACTURE ~ HEIGHT, family = binomial, data = glow)
+#model_z4 <- glm(FRACTURE ~ BMI, family = binomial, data = glow)
+#model_z5 <- glm(FRACTURE ~ PRIORFRAC, family = binomial, data = glow)
+#model_z6 <- glm(FRACTURE ~ PREMENO, family = binomial, data = glow)
+#model_z7 <- glm(FRACTURE ~ MOMFRAC, family = binomial, data = glow)
+#model_z8 <- glm(FRACTURE ~ ARMASSIST, family = binomial, data = glow)
+#model_z9 <- glm(FRACTURE ~ SMOKE, family = binomial, data = glow)
+#model_z10 <- glm(FRACTURE ~ RATERISK, family = binomial, data = glow)
+
+#summary(model_z1)
+#summary(model_z2)
+#summary(model_z3)
+#summary(model_z4)
+#summary(model_z5)
+#summary(model_z6)
+#summary(model_z7)
+#summary(model_z8)
+#summary(model_z9)
+#summary(model_z10)
+
+# not interesting due to all variables (i.e. SUB_ID, SITE_ID, PHY_ID)
+# model00 <- glm(FRACTURE ~ ., family = binomial, data = glow)
+# summary(model00)
+
+# full model, order by continuous, then factor
+model0 <- glm(FRACTURE ~ AGE + WEIGHT + HEIGHT + BMI + PRIORFRAC + PREMENO + MOMFRAC + ARMASSIST + SMOKE + RATERISK, family = binomial, data = glow) 
+summary(model0)
+
+# fit model # note - should remove below model1
+model0_fitted <- update(model0, . ~ . - WEIGHT - BMI - PREMENO - SMOKE)
+summary(model0_fitted)
+
+# build model with following covariates (drop WEIGHT, BMI, PREMENO, SMOKE)
+# AGE, HEIGHT, PRIORFRAC, MOMFRAC, ARMASSIST, RATERISK {SAME, GREATER}
+
+model1 <- glm(FRACTURE ~ AGE + HEIGHT + PRIORFRAC + MOMFRAC + ARMASSIST + RATERISK, family = binomial, data = glow) 
+summary(model1)
+
+# from above result, adding back the removed covariates we see they are not needed to keep the remaining covariates
+# this becomes the model, adding back removed covariates WEIGHT, BMI, PREMENO, SMOKE the coefficients didn't become significant
+# this becomes the main effects model
+
+
+# need to check scale of logit for remaining continous variables AGE HEIGHT
+# assume HEIGHT is linearin logit
+
+```
+
+## The main effects model
+model1 <- glm(FRACTURE ~ AGE + HEIGHT + PRIORFRAC + MOMFRAC + ARMASSIST + RATERISK, family = binomial, data = glow) 
+
+use lrtest from package lmtest
+
+
+### test interactions for the following:
+
+5. AGE: [HEIGHT, PRIORFRAC, MOMFRAC, ARMASSIST, RATERISK]
+4. HEIGHT: [PRIORFRAC, MOMFRAC, ARMASSIST, RATERISK]
+3. PRIORFRAC: [MOMFRAC, ARMASSIST, RATERISK]
+2. MOMFRAC: [ARMASSIST, RATERISK]
+1. ARMASSIST: RATERISK  
+
+total 15 interactions
+
+```{r loglikelihood_testing}
+library(lmtest)
+
+# model AGE* , HEIGHT* , PRIORFRAC*
+
+model_effects <- glm(FRACTURE ~ AGE + HEIGHT + PRIORFRAC + MOMFRAC + ARMASSIST + RATERISK, family = binomial, data = glow) 
+lrtest(model_effects)
+
+# (5) AGE: [HEIGHT, PRIORFRAC, MOMFRAC, ARMASSIST, RATERISK]
+
+test <- model_effects
+test <- update(test, . ~ . + AGE:HEIGHT)
+summary(test)
+lrtest(test)
+
+test <- model_effects
+test <- update(test, . ~ . + AGE:PRIORFRAC)
+summary(test)
+lrtest(test)
+
+test <- model_effects
+test <- update(test, . ~ . + AGE:MOMFRAC)
+summary(test)
+lrtest(test)
+
+test <- model_effects
+test <- update(test, . ~ . + AGE:ARMASSIST)
+summary(test)
+lrtest(test)
+
+test <- model_effects
+test <- update(test, . ~ . + AGE:RATERISK)
+summary(test)
+lrtest(test)
+
+# (4) HEIGHT: [PRIORFRAC, MOMFRAC, ARMASSIST, RATERISK]
+
+test <- model_effects
+test <- update(test, . ~ . + HEIGHT:PRIORFRAC)
+summary(test)
+lrtest(test)
+
+test <- model_effects
+test <- update(test, . ~ . + HEIGHT:MOMFRAC)
+summary(test)
+lrtest(test)
+
+test <- model_effects
+test <- update(test, . ~ . + HEIGHT:ARMASSIST)
+summary(test)
+lrtest(test)
+
+test <- model_effects
+test <- update(test, . ~ . + HEIGHT:RATERISK)
+summary(test)
+lrtest(test)
+
+# (3) PRIORFRAC: [MOMFRAC, ARMASSIST, RATERISK]
+
+test <- model_effects
+test <- update(test, . ~ . + PRIORFRAC:MOMFRAC)
+summary(test)
+lrtest(test)
+
+test <- model_effects
+test <- update(test, . ~ . + PRIORFRAC:ARMASSIST)
+summary(test)
+lrtest(test)
+
+test <- model_effects
+test <- update(test, . ~ . + PRIORFRAC:RATERISK)
+summary(test)
+lrtest(test)
+
+# (2) MOMFRAC: [ARMASSIST, RATERISK]
+
+test <- model_effects
+test <- update(test, . ~ . + MOMFRAC:ARMASSIST)
+summary(test)
+lrtest(test)
+
+test <- model_effects
+test <- update(test, . ~ . + MOMFRAC:RATERISK)
+summary(test)
+lrtest(test)
+
+# (1) ARMASSIST: RATERISK  
+
+test <- model_effects
+test <- update(test, . ~ . + ARMASSIST:RATERISK)
+summary(test)
+lrtest(test)
+
+
+```
+
+### Results from interactions
+``` 
+## AGE:HEIGHT           0.001065   0.002095  0.508  0.6113  
+   AGE:PRIORFRACYes    -0.05864    0.02583  -2.270  0.023188 *  
+## AGE:MOMFRACYes      -0.01353    0.03264  -0.414  0.67854   
+## AGE:ARMASSISTYes    -0.01132    0.02479  -0.457  0.64802   
+## AGE:RATERISKSame    -0.03999    0.03151  -1.269  0.20438   
+## AGE:RATERISKGreater -0.05021    0.03202  -1.568  0.11690  
+## HEIGHT:PRIORFRACYes  0.01915    0.03770   0.508  0.61146   
+## HEIGHT:MOMFRACYes    0.07401    0.04718   1.569  0.11675   
+## HEIGHT:ARMASSISTYes -0.04419    0.03594  -1.229  0.21890   
+## HEIGHT:RATERISKSame      -0.01577    0.04550  -0.347  0.72890   
+## HEIGHT:RATERISKGreater    0.02394    0.04528   0.529  0.59695 
+   PRIORFRACYes:MOMFRACYes  -1.07823    0.65021  -1.658  0.09726 . 
+## PRIORFRACYes:ARMASSISTYes 0.24587    0.48467   0.507  0.61194   
+## PRIORFRACYes:RATERISKSame     0.001597   0.625563   0.003  0.99796   
+## PRIORFRACYes:RATERISKGreater  0.208811   0.624586   0.334  0.73814   
+   MOMFRACYes:ARMASSISTYes  -1.33817    0.62405  -2.144  0.03201 * 
+## MOMFRACYes:RATERISKSame     1.04615    0.95957   1.090  0.27561   
+## MOMFRACYes:RATERISKGreater  0.36775    0.96207   0.382  0.70227   
+## ARMASSISTYes:RATERISKSame     0.10760    0.56723   0.190  0.84956   
+## ARMASSISTYes:RATERISKGreater -0.60953    0.58200  -1.047  0.29496   
+
+```
+
+## Add to main effects model
+
+### we find three interactions, AGE:PRIORFRACYes, PRIORFRACYes:MOMFRACYes, MOMFRACYes:ARMASSISTYes
+
+```{r fit_new_model}
+
+model_effects_new <- glm(FRACTURE ~ AGE + HEIGHT + PRIORFRAC + MOMFRAC + ARMASSIST + RATERISK + 
+                       AGE:PRIORFRAC + PRIORFRAC:MOMFRAC + MOMFRAC:ARMASSIST, family = binomial, data = glow) 
+summary(model_effects_new)
+
+
+# create final model with interactions terms AGE:PRIORFRAC + MOMFRAC:ARMASSIST
+model_effects_final <- glm(FRACTURE ~ AGE + HEIGHT + PRIORFRAC + MOMFRAC + ARMASSIST + RATERISK + 
+                       AGE:PRIORFRAC + MOMFRAC:ARMASSIST, family = binomial, data = glow) 
+summary(model_effects_final)
+
+
+```
+
+## Final Interaction Model
+
+
+```
+(Intercept)
+AGE                      0.05890    0.01666   3.535 0.000408 ***
+HEIGHT                  -0.04413    0.01848  -2.388 0.016949 *  
+PRIORFRACYes             4.65073    1.88342   2.469 0.013538 *  
+MOMFRACYes               1.19902    0.39487   3.036 0.002393 ** 
+ARMASSISTYes             0.61423    0.25358   2.422 0.015426 *  
+RATERISKGreater          0.72116    0.29660   2.431 0.015040 *  
+AGE:PRIORFRACYes        -0.05610    0.02600  -2.158 0.030950 *  
+MOMFRACYes:ARMASSISTYes -1.26534    0.62377  -2.029 0.042507 *  
+
+FRACTURE ~ AGE + HEIGHT + PRIORFRAC + MOMFRAC + ARMASSIST + RATERISK + AGE:PRIORFRAC + MOMFRAC:ARMASSIST
+
+```
+
+
+```{r interaction_model_ROC}
+
+library(pROC)
+library(vcdExtra)
+
+# vcov(model_effects_final)
+
+HLtest(model_effects_final)
+
+glow$predict_mfinal <- predict(model_effects_final, type = "response")
+with(glow, addmargins(table(glow$predict_mfinal > 0.5, glow$FRACTURE)))
+
+(roc_final_model <- roc(glow$FRACTURE ~ glow$predict_mfinal, data = glow))
+plot(roc_final_model, main = "ROC: Final Effects Model")
+
+```
+
+misc
+
+```{r additional_interaction_model_ROC}
+
+## restart with clean data
+glow <- read_glow_dataset()
+
+model_last <- glm(FRACTURE ~ AGE:PRIORFRAC + HEIGHT + MOMFRAC:ARMASSIST + I(as.integer(RATERISK) == 3), family = binomial, data = glow)
+HLtest(model_last)
+summary(HLtest(model_last))
+
+# classification table
+glow$predict_last <- predict(model_last, type = "response")
+with(glow, addmargins(table(predict_last > 0.5, FRACTURE)))
+
+# Sensitivy, specificity, ROC (using pROC)
+roc_model_last <- roc(glow$FRACTURE ~ glow$predict_last, data = glow)
+plot(roc_model_last, main = "ROC: Last model")
+
+# create table 
+vars <- c("thresholds","sensitivities","specificities")
+model_table <- data.frame(roc_model_last[vars])
+
+findIndex <- function(x, y) which.min( (x-y)^2 )
+cutPoints <- seq(0.05, 0.75, by = 0.05)
+
+tableIndex <- mapply(findIndex, y = cutPoints, MoreArgs = list(x = roc_model_last$thresholds))
+
+model_table[tableIndex, ]
+
+# plot
+plot(specificities ~ thresholds, xlim = c(0, 1), type = "l",
+xlab = "probability cutoff", ylab = "sensitivity / specificity",
+ylim = c(0, 1), data = model_table, main = "probability sensitivity")
+with(model_table, lines(thresholds, sensitivities, col = "red"))
+legend(x = 0.75, y = 0.55, legend = c("Sensitivity", "Specificity"),
+lty = 1, col = c("red","black"))
+abline(h = c(0, 1), col = "grey80", lty = "dotted")
+
+```
+
+
+
