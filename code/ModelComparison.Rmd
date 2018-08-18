@@ -127,7 +127,7 @@ count_trn <- table(trainingData$FRACTURE)
 count_test <- table(validationData$FRACTURE)
 
 
-barplot(counts,main="Full Dataset", ylab="Count", col=c("orange","blue"),names.arg=c("0 No Fracture", "1 Fracture"), cex.names=0.8)
+barplot(count_full,main="Full Dataset", ylab="Count", col=c("orange","blue"),names.arg=c("0 No Fracture", "1 Fracture"), cex.names=0.8)
 
 barplot(count_trn,main="Training Dataset", ylab="Count", col=c("orange","blue"),names.arg=c("0 No Fracture", "1 Fracture"), cex.names=0.8)
 
@@ -209,6 +209,10 @@ set.seed(999)
 
 logit.fit <- glm(FRACTURE ~ AGE + HEIGHT + PRIORFRAC + MOMFRAC + ARMASSIST + RATERISK + SMOKE, data = trainingData, family = binomial(link = "logit"))
 summary(logit.fit)
+
+# To exponentiate the log ODDS to make it ODDS Ratio and also get corresponding 95% CIs
+exp(cbind(ODDs_Ratio = coef(logit.fit), confint(logit.fit)))
+
 # First Predicting the responses on training data set itself
 logistic.fit.pred.train <- predict(logit.fit, newdata=trainingData, type = "response")
 
