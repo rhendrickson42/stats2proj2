@@ -84,7 +84,7 @@ The Global Longitudinal Study of Osteoporosis in Women (GLOW) (2005-2014) was a 
 2. Based on the Sub_ID(Subject ID), we can assume that the datat is independent sample of participants.
 </p>
 ```{r}
-glow_data_file <- here("data", "glow500.csv")
+glow_data_file <- here::here("data", "glow500.csv")
 dataset_loc <- 
 dataset <- read.csv(glow_data_file, sep=",", stringsAsFactors = TRUE, header=TRUE,na.strings=c(""))
 

@@ -10,7 +10,7 @@
 read_glow_dataset <- function() {
   library(here)
 
-  glow_data_file <- here("data", "glow500.csv")
+  glow_data_file <- here::here("data", "glow500.csv")
   glow <- read.csv(glow_data_file)
   
   glow$PRIORFRAC <- factor(glow$PRIORFRAC, levels=c(0,1), labels=c("No","Yes"))

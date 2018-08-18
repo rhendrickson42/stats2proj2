@@ -10,7 +10,7 @@ output:
 date: "August 10, 2018"
 ---
 
-```{r setup, include=FALSE}
+```{r setup_interaction0, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
 library(here)
@@ -20,7 +20,7 @@ library("ISLR")
 library("SmartEDA")
 
 
-data_setup_script <- here("code", "data_functions.R")
+data_setup_script <- here::here("code", "data_functions.R")
 source(data_setup_script)
 ```
 

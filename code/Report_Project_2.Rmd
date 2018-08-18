@@ -1,0 +1,133 @@
+---
+title: "MSDS6372 Project 2 - Osteoporosis in Women"
+author: "Caroll Rodriguez, Rajat Chandna, Randall Hendrickson, Lokesh Maganti"
+date: "August 18, 2018"
+output: 
+  html_document:
+    toc: yes
+    keep_md: yes
+  pdf_document:
+    toc: yes
+---
+
+```{r setup00, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(knitr)
+library(kableExtra)
+
+```
+\newpage
+
+## Objective 1 - EDA and logistic regression model
+
+Display the ability to perform EDA and build a logistic regression model
+
+•	Perform your logistic regression analysis and provide interpretation of the regression coefficients including hypothesis testing, and confidence intervals. For simplicity sake, you do not need to include interactions with this model. Comment on the  practical vs statistical significance of the deemed important factors..
+
+Logistical Considerations.
+
+•	Just like last time, this does not have to be extremely fancy in terms of the model building approach, let EDA, feature selection, and overall intuition guide you.
+
+## Introduction
+
+## Data Description
+
+## Exploratory Analysis
+
+## Restatement of Problem and the overall approach to solve it.
+
+## Model Selection
+
+## Checking Assumptions
+
+## Parameter Interpretation
+
+## Final conclusions from the analysis of Objective 1
+
+
+
+```
+to do:
+
+
+take writeup from EDA and place here with reference to figures, etc
+
+```
+
+
+
+
+\newpage
+
+## Objective 2 - additional competing models
+
+•	Record the predictive performance metrics from your simple, highly interpretable model from Objective 1.  
+
+
+•	You must include one additional model which is also a more complicated logistic regression model than in Objective 1.  By complicated, I do not mean that you include more predictors (that will be somewhat sorted out in Objective 1), but rather model complexity through interaction terms, new variables created by the group, or transformations.
+
+•	Create another competing model using just the continuous predictors and use LDA or QDA.
+
+•	Use a nonparameteric model approach as a competing model.  Random forest for predictors that are both categorical and continuous or a k-nearest neighbors approach if just working with continuous predictors. 
+
+•	Provide a summary table of the performance across the competing methods. Summarize the overall findings.  A really great report will also give insight as to why the “best” model won out.  This is where a thorough EDA will always help.
+
+## Record predictive performance from objective 1
+
+## Another competing model (interaction terms)
+
+## Another competing model (just continuous) LDA
+
+## nonparametric model (random forest)
+
+## another nonparametric model (conditional random forest)
+
+## Summary table of performance
+
+| Model                                                         | Predictors         | Accuracy | 95% CI         | Sensitivity | Specificity | AUC   |
+|---------------------------------------------------------------|--------------------|----------|----------------|-------------|-------------|-------|
+| Logistic Regression (logit)                                   | 7                  | 74.5%    | (66.7%, 81.3%) | 94.6%       | 13.5%       | 67.8% |
+| Logistic Regression w/Interactions (logit)                    | 7 + 3 interactions | 75.2%    | (67.4%, 81.9%) | 92.9%       | 21.6%       | 72.2% |
+| Random Forest*                                                | 10                 | 74.5%    | (66.7%, 81.3%) | 99.1%       | 0.0%        | 74.2% |
+| *RF Lower Cutoff (decreasing the probability from 50% to 30%) | 10                 | 73.8%    | (66%, 80.7%)   | 91.1%       | 21.6%       |       |
+| Conditional Random Forest                                     | 10                 | 75.2%    | (67.4%, 81.9%) | 94.6%       | 16.2%       | 69.3% |
+| LDA                                                           | 4                  | 73.2%    | (65.3%, 80.1%) | 94.6%       | 8.1%        | 60.2% |
+
+
+## Conclusion/Discussion
+
+
+```
+to do:
+
+
+take writeup from EDA and place here with reference to figures, etc
+
+```
+
+
+
+## ***Appendix*** ==========================================
+
+
+## *** ***Appendix A:*** EDA - Analysis =======================
+
+
+```{r child = 'EDA.Rmd'}
+```
+
+
+## *** ***Appendix B:*** Model Comparison - Analysis ==========
+
+
+```{r child = 'ModelComparison.Rmd'}
+```
+
+
+## *** ***Appendix C:*** Test interaction - LDA ===============
+
+
+```{r child = 'test_interaction.Rmd'}
+```
+
