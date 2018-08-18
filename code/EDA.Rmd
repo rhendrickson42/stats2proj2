@@ -234,7 +234,7 @@ for(i in 1:4) {
 ```
 
 <p>Frequency counts of subjects with Fracture. Compare Full, Train and Validation</p>
-```{r} FractureCounts}
+```{r FractureCounts}
 par(mfrow=c(1,3))
 #par(mar=c(5,8,4,2)) # increase y-axis margin.
 count_full <- table(dataset$FRACTURE)
@@ -242,7 +242,7 @@ count_trn <- table(trainingData$FRACTURE)
 count_test <- table(validationData$FRACTURE)
 
 
-barplot(counts,main="Full Dataset", ylab="Count", col=c("orange","blue"),names.arg=c("0 No Fracture", "1 Fracture"), cex.names=0.8)
+barplot(count_full,main="Full Dataset", ylab="Count", col=c("orange","blue"),names.arg=c("0 No Fracture", "1 Fracture"), cex.names=0.8)
 
 barplot(count_trn,main="Training Dataset", ylab="Count", col=c("orange","blue"),names.arg=c("0 No Fracture", "1 Fracture"), cex.names=0.8)
 
