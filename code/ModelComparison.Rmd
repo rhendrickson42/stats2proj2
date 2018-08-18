@@ -1,0 +1,420 @@
+---
+title: "Untitled"
+author: "Rajat Chandna"
+date: "August 17, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r setup1, message=FALSE, include=FALSE} 
+# Function to Install and Load R Packages 
+Install_And_Load <- function(Required_Packages)
+{
+    Remaining_Packages <- Required_Packages[!(Required_Packages %in% installed.packages()[,"Package"])];
+
+    if(length(Remaining_Packages)) 
+    {
+        install.packages(Remaining_Packages,repos = "http://cran.us.r-project.org");
+    }
+    for(package_name in Required_Packages)
+    {
+        library(package_name,character.only=TRUE,quietly=TRUE);
+    }
+}
+
+# Specify the list of required packages to be installed and load    
+Required_Packages=c("readxl",
+"dplyr",
+"plyr",
+"glmnet",
+"ISLR",
+"leaps",
+"ggplot2",
+"ROCR",
+"MASS",
+"pheatmap",
+"RColorBrewer",
+"randomForest",
+"gmodels",
+"vcd",
+"Amelia",
+"e1071",
+"corrplot",
+"rpart",
+"ROSE",
+"caret",
+"ResourceSelection",
+"dummies",
+"e1071",
+"here",
+"tidyr",
+"party"
+);
+
+# Call the Function
+Install_And_Load(Required_Packages);
+```
+
+```{r}
+glow_data_file <- here("data", "glow500.csv")
+dataset_loc <- 
+dataset <- read.csv(glow_data_file, sep=",", stringsAsFactors = TRUE, header=TRUE,na.strings=c(""))
+
+# List rows of data that have missing values 
+Missing_values <- dataset[!complete.cases(dataset),]
+
+# Create new dataset without missing data 
+dataset <- na.omit(dataset)
+
+#remove FRACSCORE feature per professor Turner
+drops <- c("FRACSCORE")
+dataset <- dataset[ , !(names(dataset) %in% drops)]
+
+#Cleanup column names
+colnames(dataset)[colnames(dataset)=="ï..SUB_ID"] <- "SUB_ID"
+
+#set categorical variables as factors
+dataset$PRIORFRAC <- factor(dataset$PRIORFRAC,labels=c("0","1"))
+dataset$PREMENO <- factor(dataset$PREMENO,labels=c("0","1"))
+dataset$MOMFRAC <- factor(dataset$MOMFRAC,labels=c("0","1"))
+dataset$ARMASSIST <- factor(dataset$ARMASSIST,labels=c("0","1"))
+dataset$SMOKE <- factor(dataset$SMOKE,labels=c("0","1"))
+dataset$RATERISK <- factor(dataset$RATERISK,labels=c("1","2","3"))
+dataset$FRACTURE <- factor(dataset$FRACTURE,labels=c("0","1"))
+
+str(dataset)
+```
+
+##Create Train and Validation Datasets
+<br>
+```{r}
+set.seed(999)
+validation_index = createDataPartition(dataset$FRACTURE, p=0.70, list=FALSE)
+validationData = dataset[-validation_index,c(4:14)]
+trainingData = dataset[validation_index,c(4:14)]
+
+table(dataset$FRACTURE)
+table(trainingData$FRACTURE)
+table(validationData$FRACTURE)
+```
+
+```{r logisticRegressionAssumptionsCheck}
+set.seed(999)
+
+## Formatting Test Data Set
+# Recode Rate Risk Variable since its ordinal and we donot want to loose its info if it gets
+# coded as nominal variable before running the Model
+validationData$RATERISK <- factor(validationData$RATERISK, levels = c(1,2,3), ordered = T)
+
+xfactors_test <- model.matrix(validationData$FRACTURE ~ validationData$PRIORFRAC + validationData$PREMENO + validationData$MOMFRAC + validationData$ARMASSIST + validationData$SMOKE + validationData$RATERISK)[, -1]
+x_test <- as.matrix(data.frame(validationData$AGE, validationData$WEIGHT, validationData$HEIGHT, validationData$BMI, xfactors_test))
+
+## Formatting Training Data Set
+trainingData$RATERISK <- factor(trainingData$RATERISK, levels = c(1,2,3), ordered = T)
+xfactors_train <- model.matrix(trainingData$FRACTURE ~ trainingData$PRIORFRAC + trainingData$PREMENO + trainingData$MOMFRAC + trainingData$ARMASSIST + trainingData$SMOKE + trainingData$RATERISK)[, -1]
+x_train <- as.matrix(data.frame(trainingData$AGE, trainingData$WEIGHT, trainingData$HEIGHT, trainingData$BMI, xfactors_train))
+
+# Doing Cross validation to find the best fitting model based upon Lasso
+cvfit <- cv.glmnet(x_train, y=trainingData$FRACTURE, family = "binomial", type.measure = "class", nlambda = 1000)
+plot(cvfit)
+
+# Model with Lowest Lambda is shrinking all the coefficients, hence selecting lambda based upon
+# Test Set AUC and EDA Results
+#cvfit$glmnet.fit
+coef(cvfit, s="lambda.min")
+
+# Fitting the best model based upon selected lambda
+fit <- glmnet(x_train, y=trainingData$FRACTURE, family="binomial", alpha = 1, lambda = cvfit$lambda.min)
+
+# First Predicting the responses on training data set itself
+fit.pred <- predict(fit, newx = x_train, type = "response")
+
+#Create ROC curves for training Data Set
+pred <- prediction(fit.pred[,1], trainingData$FRACTURE)
+roc.perf = performance(pred, measure = "tpr", x.measure = "fpr")
+auc.train <- performance(pred, measure = "auc")
+auc.train <- auc.train@y.values
+
+##Plot ROC for training Set
+plot(roc.perf)
+abline(a=0, b= 1) #Ref line indicating poor performance
+text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
+
+#Run model from training set on validation Set
+fit.pred1 <- predict(fit, newx = x_test, type = "response")
+
+#ROC curves
+pred1 <- prediction(fit.pred1[,1], validationData$FRACTURE)
+roc.perf1 = performance(pred1, measure = "tpr", x.measure = "fpr")
+auc.val1 <- performance(pred1, measure = "auc")
+auc.val1 <- auc.val1@y.values
+plot(roc.perf1)
+abline(a=0, b= 1)
+text(x = .40, y = .6,paste("AUC = ", round(auc.val1[[1]],3), sep = ""))
+
+#confusion matrix
+pdata <- predict(fit, newx = x_test, type = "response")
+pdata_logical <- pdata[, 1] > 0.5
+confusionMatrix(data = as.factor(as.numeric(pdata_logical)), reference = as.factor(as.numeric(validationData$FRACTURE) - 1))
+
+
+#mydata <- dataset[, c(4:14)] %>% dplyr::select_if(is.numeric)
+#predictors <- colnames(mydata)
+#mydata <- mydata %>%
+#  mutate(logit = log(probabilities/(1-probabilities))) %>%
+#  gather(key = "predictors", value = "predictor.value", -logit)
+```
+
+
+## Run Normal Logit Model with Identified Predictors
+```{r logisticRegressionNormal}
+set.seed(999)
+
+logit.fit <- glm(FRACTURE ~ AGE + HEIGHT + PRIORFRAC + MOMFRAC + ARMASSIST + RATERISK + SMOKE, data = trainingData, family = binomial(link = "logit"))
+# First Predicting the responses on training data set itself
+logistic.fit.pred.train <- predict(logit.fit, newdata=trainingData, type = "response")
+
+#Create ROC curves for training Data Set
+pred.train <- prediction(logistic.fit.pred.train, trainingData$FRACTURE)
+roc.perf = performance(pred.train, measure = "tpr", x.measure = "fpr")
+auc.train <- performance(pred.train, measure = "auc")
+auc.train <- auc.train@y.values
+
+##Plot ROC for training Set
+plot(roc.perf)
+abline(a=0, b= 1) #Ref line indicating poor performance
+text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
+
+#Run model from training set on validation Set
+logistic.fit.pred.test <- predict(logit.fit, newdata=validationData, type = "response")
+
+#ROC curves
+pred.test <- prediction(logistic.fit.pred.test, validationData$FRACTURE)
+roc.perf1 = performance(pred.test, measure = "tpr", x.measure = "fpr")
+auc.val1 <- performance(pred.test, measure = "auc")
+auc.val1 <- auc.val1@y.values
+plot(roc.perf1)
+abline(a=0, b= 1)
+text(x = .40, y = .6,paste("AUC = ", round(auc.val1[[1]],3), sep = ""))
+
+#confusion matrix
+pdata_logical <-  logistic.fit.pred.test > 0.5
+confusionMatrix(data = as.factor(as.numeric(pdata_logical)), reference = as.factor(as.numeric(validationData$FRACTURE) - 1))
+```
+
+## Add Interactions to Normal logit
+```{r logisticRegressionNormal1}
+set.seed(999)
+# Since top 3 predictors are Age, PriorFrac and RISK, adding model complexity
+# via interactions 
+logit.fit.interactions <- glm(FRACTURE ~ AGE + HEIGHT + PRIORFRAC + MOMFRAC + ARMASSIST + RATERISK + SMOKE + AGE:PRIORFRAC + RATERISK:AGE + MOMFRAC:ARMASSIST, data = trainingData, family = binomial(link = "logit"))
+summary(logit.fit.interactions)
+# First Predicting the responses on training data set itself
+logistic.fit.pred.train.interaction <- predict(logit.fit.interactions, newdata=trainingData, type = "response")
+
+#Create ROC curves for training Data Set
+pred.train.interaction <- prediction(logistic.fit.pred.train.interaction, trainingData$FRACTURE)
+roc.perf = performance(pred.train.interaction, measure = "tpr", x.measure = "fpr")
+auc.train <- performance(pred.train.interaction, measure = "auc")
+auc.train <- auc.train@y.values
+
+##Plot ROC for training Set
+plot(roc.perf)
+abline(a=0, b= 1) #Ref line indicating poor performance
+text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
+
+#Run model from training set on validation Set
+logistic.fit.pred.test.interaction <- predict(logit.fit.interactions, newdata=validationData, type = "response")
+
+#ROC curves
+pred.test.interaction <- prediction(logistic.fit.pred.test.interaction, validationData$FRACTURE)
+roc.perf1 = performance(pred.test.interaction, measure = "tpr", x.measure = "fpr")
+auc.val1 <- performance(pred.test.interaction, measure = "auc")
+auc.val1 <- auc.val1@y.values
+plot(roc.perf1)
+abline(a=0, b= 1)
+text(x = .40, y = .6,paste("AUC = ", round(auc.val1[[1]],3), sep = ""))
+
+#confusion matrix
+pdata_logical <-  logistic.fit.pred.test.interaction > 0.5
+confusionMatrix(data = as.factor(as.numeric(pdata_logical)), reference = as.factor(as.numeric(validationData$FRACTURE) - 1))
+
+# Checking the assumptions
+probabilities <- predict(logit.fit.interactions, type = "response")
+predicted.classes <- ifelse(probabilities > 0.5, "pos", "neg")
+head(predicted.classes)
+
+# Linearity assumption
+subNumericPred <- trainingData %>% dplyr::select(AGE, HEIGHT) 
+predictors <- colnames(subNumericPred)
+subNumericPred <- subNumericPred %>%
+                  mutate(logit = log(probabilities/(1-probabilities))) %>%
+                  gather(key = "predictors", value = "predictor.value", -logit)
+
+ggplot(subNumericPred, aes(logit, predictor.value)) +
+                geom_point(size = 0.5, alpha = 0.5) +
+                geom_smooth(method = "loess") + 
+                theme_bw() + 
+                facet_wrap(~predictors, scales = "free_y")
+
+plot(logit.fit.interactions, which = 4, id.n =3) 
+```
+
+## Running Random Forest Fit
+```{r runningRandomForest}
+set.seed(999)
+
+str(trainingData)
+rf.fit <- randomForest(FRACTURE ~ ., data=trainingData, mtry=4, ntree=500, maxnodes = 12, importance=T)
+
+rf.fit.pred.train <- predict(rf.fit, newdata=trainingData, type="prob")
+pred.train.rf <- prediction(rf.fit.pred.train[,2], trainingData$FRACTURE)
+roc.perf = performance(pred.train.rf, measure = "tpr", x.measure = "fpr")
+auc.train <- performance(pred.train.rf, measure = "auc")
+auc.train <- auc.train@y.values
+plot(roc.perf)
+abline(a=0, b= 1)
+text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
+
+#confusion matrix Training
+pdata_logical_train <-  (rf.fit.pred.train[,2] >= 0.5)
+confusionMatrix(data = as.factor(as.numeric(pdata_logical_train)), reference = as.factor(as.numeric(trainingData$FRACTURE) - 1))
+
+rf.fit.pred.test <- predict(rf.fit, newdata=validationData, type="prob")
+pred.test.rf <- prediction(rf.fit.pred.test[,2], validationData$FRACTURE)
+roc.perf = performance(pred.test.rf, measure = "tpr", x.measure = "fpr")
+auc.train <- performance(pred.test.rf, measure = "auc")
+auc.train <- auc.train@y.values
+plot(roc.perf)
+abline(a=0, b= 1)
+text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
+
+#confusion matrix Test
+pdata_logical <-  rf.fit.pred.test[,2] > 0.5
+confusionMatrix(data = as.factor(as.numeric(pdata_logical)), reference = as.factor(as.numeric(validationData$FRACTURE) - 1))
+
+#confusion matrix Test Lower Cutoff
+pdata_logical_lowercf <-  rf.fit.pred.test[,2] >= 0.3
+confusionMatrix(data = as.factor(as.numeric(pdata_logical_lowercf)), reference = as.factor(as.numeric(validationData$FRACTURE) - 1))
+
+varImpPlot(rf.fit)
+
+```
+
+
+## Running Conditional Random Forst Fit
+```{r runningConditionalRandomForest}
+set.seed(999)
+
+crf.fit <- cforest(FRACTURE ~ ., data=trainingData, control=cforest_unbiased(ntree=500))
+
+crf.fit.pred.train <- predict(crf.fit, newdata=trainingData, OOB = TRUE, type="prob")
+unlist.Pred.train <- matrix(unlist(crf.fit.pred.train), ncol=2,  byrow = TRUE)
+pred.train.crf <- prediction(unlist.Pred.train[,2], trainingData$FRACTURE)
+roc.perf = performance(pred.train.crf, measure = "tpr", x.measure = "fpr")
+auc.train <- performance(pred.train.crf, measure = "auc")
+auc.train <- auc.train@y.values
+plot(roc.perf)
+abline(a=0, b= 1)
+text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
+
+#confusion matrix Training
+pdata_logical_train <-  (unlist.Pred.train[,2] >= 0.5)
+confusionMatrix(data = as.factor(as.numeric(pdata_logical_train)), reference = as.factor(as.numeric(trainingData$FRACTURE) - 1))
+
+crf.fit.pred.test <- predict(crf.fit, newdata=validationData, OOB = T, type="prob")
+unlist.Pred.test <- matrix(unlist(crf.fit.pred.test), ncol=2,  byrow = TRUE)
+pred.test.crf <- prediction(unlist.Pred.test[,2], validationData$FRACTURE)
+roc.perf = performance(pred.test.crf, measure = "tpr", x.measure = "fpr")
+auc.train <- performance(pred.test.crf, measure = "auc")
+auc.train <- auc.train@y.values
+plot(roc.perf)
+abline(a=0, b= 1)
+text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
+
+#confusion matrix
+pdata_logical <-   unlist.Pred.test[,2] > 0.5
+confusionMatrix(data = as.factor(as.numeric(pdata_logical)), reference = as.factor(as.numeric(validationData$FRACTURE) - 1))
+
+relativeImp <- varimp(crf.fit)
+sort(relativeImp, decreasing = T)
+
+```
+
+## LDA Model fit
+```{r runningLDA}
+library(MASS)
+library(gridExtra)
+set.seed(999)
+
+plot(dataset[,c(5:8)], col=dataset$FRACTURE)
+
+lda.fit <- lda(FRACTURE ~ AGE + HEIGHT + WEIGHT + BMI, data = trainingData)
+
+#ROC on training data set
+ldaprd <- predict(lda.fit, newdata = trainingData)$posterior
+ldaprd <- ldaprd[,2]
+pred.train <- prediction(ldaprd, trainingData$FRACTURE)
+roc.perf = performance(pred.train, measure = "tpr", x.measure = "fpr")
+auc.train <- performance(pred.train, measure = "auc")
+auc.train <- auc.train@y.values
+
+#Plot ROC on Training Data
+plot(roc.perf,main="LDA")
+abline(a=0, b= 1) #Ref line indicating poor performance
+text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
+
+prd <- predict(lda.fit, newdata = trainingData)$class
+confusionMatrix(data = prd, reference = trainingData$FRACTURE)
+
+
+#ROC on test data set
+ldaprd.test <- predict(lda.fit, newdata = validationData)$posterior
+ldaprd.test <- ldaprd.test[,2]
+pred.test <- prediction(ldaprd.test, validationData$FRACTURE)
+roc.perf = performance(pred.test, measure = "tpr", x.measure = "fpr")
+auc.train <- performance(pred.test, measure = "auc")
+auc.train <- auc.train@y.values
+
+#Plot ROC on Training Data
+plot(roc.perf,main="LDA")
+abline(a=0, b= 1) #Ref line indicating poor performance
+text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
+
+prd.test <- predict(lda.fit, newdata = validationData)$class
+confusionMatrix(data = prd.test, reference = validationData$FRACTURE)
+
+## Assumption of Eq Variance / CoVariance 
+box.AGE <- ggplot(dataset, aes(x = FRACTURE, y = AGE, col = FRACTURE, fill = FRACTURE)) + 
+  geom_boxplot(alpha = 0.2) + 
+  theme(legend.position = "none") + 
+  scale_color_manual(values = c("blue", "red")) +
+  scale_fill_manual(values = c("blue", "red"))
+
+box.HEIGHT <- ggplot(dataset, aes(x = FRACTURE, y = HEIGHT, col = FRACTURE, fill = FRACTURE)) + 
+  geom_boxplot(alpha = 0.2) + 
+  theme(legend.position = "none") + 
+  scale_color_manual(values = c("blue", "red")) +
+  scale_fill_manual(values = c("blue", "red"))
+
+box.WEIGHT <- ggplot(dataset, aes(x = FRACTURE, y = WEIGHT, col = FRACTURE, fill = FRACTURE)) + 
+  geom_boxplot(alpha = 0.2) + 
+  theme(legend.position = "none") + 
+  scale_color_manual(values = c("blue", "red")) +
+  scale_fill_manual(values = c("blue", "red"))
+
+box.BMI <- ggplot(dataset, aes(x = FRACTURE, y = BMI, col = FRACTURE, fill = FRACTURE)) + 
+  geom_boxplot(alpha = 0.2) + 
+  theme(legend.position = "none") + 
+  scale_color_manual(values = c("blue", "red")) +
+  scale_fill_manual(values = c("blue", "red"))
+
+grid.arrange(box.AGE, box.HEIGHT, box.WEIGHT, box.BMI, nrow = 2, ncol = 2)
+
+#covEllipses(diabetes[,1:8], diabetes$Outcome, fill = TRUE, pooled = FALSE,  col = c("blue", "red"), variables = c(1:5, 8), fill.alpha = 0.05)
+
+```
