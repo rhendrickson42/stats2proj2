@@ -9,6 +9,19 @@ output:
   pdf_document:
     toc: yes
 ---
+<style type="text/css">
+
+body, td {
+   font-size: 16px;
+}
+code.r{
+  font-size: 8px;
+}
+pre {
+  font-size: 10px
+}
+/* code.r will control the font size for R code echoed from the code chunk, while pre will apply to any R results output from the code. */
+</style>
 
 ```{r setup00, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -19,7 +32,7 @@ library(kableExtra)
 ```
 \newpage
 
-## Objective 1 - EDA and logistic regression model
+## **Objective 1** - EDA and logistic regression model
 
 Display the ability to perform EDA and build a logistic regression model
 
@@ -42,7 +55,84 @@ Missing values were not detected in dataset. Special characters were removed fro
 What we know/don't know about the sample (500)
 
 
-## Exploratory Analysis
+## Exploratory Analysis  
+
+### Assumptions  
+This is a prospective study which means it's a study over time of a group of similar individuals
+who differ with respect to certain factors under a study and how these factors affect rates of a certain outcome
+(Fracture vs No-Fracture) Linearity - Independence of errors - Based on SUB_ID(Subject ID) we confirm
+each record is an independent sample. Multicollinearity - Weight and BMI are highly correlated but we will
+remove one from the analysis.
+
+
+```
+GLOW dataset:
+
+Variable Name Type   #Unique  
+
+     SUB_ID  integer  500 - Identification Code (1 - n)  
+    SITE_ID  integer    6 - Study Site (1 - 6)  
+     PHY_ID  integer  127 - Physician ID code (128 unique codes)  
+ PRIORFRAC*   factor    2 - History of Prior Fracture (1: No, 2: Yes)   
+        AGE  integer   36 - Age at Enrollment (Years)  
+     WEIGHT  numeric  128 - Weight at enrollment (Kilograms)  
+     HEIGHT  integer   34 - Height at enrollment (Centimeters)  
+        BMI  numeric  409 - Body Mass Index (Kg/m^2)  
+   PREMENO*   factor    2 - Menopause before age 45 (1: No, 2: Yes)  
+   MOMFRAC*   factor    2 - Mother had hip fracture (1: No, 2: Yes)  
+ ARMASSIST*   factor    2 - Arms are needed to stand from a chair (1: No, 2: Yes)  
+     SMOKE*   factor    2 - Former or current smoker (1: No, 2: Yes)  
+  RATERISK*   factor    3 - Self-reported risk of fracture (1: Less, 2: Same, 3: Greater)    
+  FRACSCORE  integer   12 - Fracture Risk Score (Composite Risk Score)  
+  FRACTURE*   factor    2 - Any fracture in first year (1: No, 2: Yes)  
+  
+```
+```{r, echo = FALSE, out.width="25%"}
+myimages<-list.files("./eda_images/continuous", pattern = ".png", full.names = TRUE)
+include_graphics(myimages)
+```
+
+#### Figure 1 - Boxplots for Continuous Variables AGE, BMI, HEIGHT, WEIGHT
+
+In Figure 1, we see the boxplots for the continous variables AGE, WEIGHT, HEIGHT, BMI.  
+
+```{r, echo = FALSE, out.width="25%"}
+myimages<-list.files("./eda_images/continuous_visual", pattern = ".png", full.names = TRUE)
+include_graphics(myimages)
+```
+
+#### Figure 2 - Correlation, and Density plots for Continuous Variables AGE, BMI, HEIGHT, WEIGHT
+
+```{r, echo = FALSE, out.width="50%"}
+myimages<-list.files("./eda_images/multivariate", pattern = ".png", full.names = TRUE)
+include_graphics(myimages)
+```
+
+#### Figure 3 - Barplot (occurrances) and Multivariate Plots for Categorical and Continuous Variables 
+
+
+```{r, echo = FALSE, out.width="50%"}
+myimages<-list.files("./eda_images/scatterplots", pattern = ".png", full.names = TRUE)
+include_graphics(myimages)
+```
+
+#### Figure 4 - Scatterplots 
+
+```{r, echo = FALSE, out.width="25%"}
+myimages<-list.files("./eda_images/roc_and_2way", pattern = ".png", full.names = TRUE)
+include_graphics(myimages)
+```
+
+#### Figure 5 - ROC and 2-way Tables 
+
+```{r, echo = FALSE, out.width="50%"}
+myimages<-list.files("./eda_images/clustering", pattern = ".png", full.names = TRUE)
+include_graphics(myimages)
+```
+
+#### Figure 6 - Clustering  
+
+
 
 ## Restatement of Problem and the overall approach to solve it.
 
@@ -69,7 +159,7 @@ take writeup from EDA and place here with reference to figures, etc
 
 \newpage
 
-## Objective 2 - additional competing models
+## **Objective 2** - additional competing models
 
 •	Record the predictive performance metrics from your simple, highly interpretable model from Objective 1.  
 
@@ -117,24 +207,24 @@ take writeup from EDA and place here with reference to figures, etc
 
 
 
-## ***Appendix*** ==========================================
+## ***Appendix*** ==========================================  
 
 
-## *** ***Appendix A:*** EDA - Analysis =======================
+## *** ***Appendix A:*** EDA - Analysis =======================  
 
 
 ```{r child = 'EDA.Rmd'}
 ```
 
 
-## *** ***Appendix B:*** Model Comparison - Analysis ==========
+## *** ***Appendix B:*** Model Comparison - Analysis ==========  
 
 
 ```{r child = 'ModelComparison.Rmd'}
 ```
 
 
-## *** ***Appendix C:*** Test interaction - LDA ===============
+## *** ***Appendix C:*** Test interaction - LDA ===============  
 
 
 ```{r child = 'test_interaction.Rmd'}
