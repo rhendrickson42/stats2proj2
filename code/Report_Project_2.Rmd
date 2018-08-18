@@ -32,6 +32,15 @@ Logistical Considerations.
 ## Introduction
 
 ## Data Description
+<p>The data set provided is about predicting whether a woman with osteoporosis will have another bone fracture.  Of course getting a bone fracture is somewhat circumstantial, but with this disease every day life could trigger a break if the progression of the disease is strong.  
+
+The dataset included a total of 14 variables: 3 ID variables which tell us the subject, doctor and physical location of each record, 4 continuous variables (BMI, Weight, Height, and Age), 6 categorical variables (PRIORFRAC, PREMENO, MOMFRAC, PREMEO, MOMFRAC, ARMASSIST, SMOKE, RATERISK), and the response (FRACTURE). We were unable to find a mapping the subjects with their location to understand the mix of countries represented.
+
+We have 500 subjects in the dataset of which 33% of the subjects have/had fractures. 
+
+Missing values were not detected in dataset. Special characters were removed from column headings.
+What we know/don't know about the sample (500)
+
 
 ## Exploratory Analysis
 
