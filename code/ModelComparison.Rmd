@@ -193,6 +193,7 @@ confusionMatrix(data = as.factor(as.numeric(pdata_logical)), reference = as.fact
 set.seed(999)
 
 logit.fit <- glm(FRACTURE ~ AGE + HEIGHT + PRIORFRAC + MOMFRAC + ARMASSIST + RATERISK + SMOKE, data = trainingData, family = binomial(link = "logit"))
+summary(logit.fit)
 # First Predicting the responses on training data set itself
 logistic.fit.pred.train <- predict(logit.fit, newdata=trainingData, type = "response")
 
@@ -288,7 +289,7 @@ set.seed(999)
 
 str(trainingData)
 rf.fit <- randomForest(FRACTURE ~ ., data=trainingData, mtry=4, ntree=500, maxnodes = 12, importance=T)
-
+rf.fit
 rf.fit.pred.train <- predict(rf.fit, newdata=trainingData, type="prob")
 pred.train.rf <- prediction(rf.fit.pred.train[,2], trainingData$FRACTURE)
 roc.perf = performance(pred.train.rf, measure = "tpr", x.measure = "fpr")
@@ -329,7 +330,7 @@ varImpPlot(rf.fit)
 set.seed(999)
 
 crf.fit <- cforest(FRACTURE ~ ., data=trainingData, control=cforest_unbiased(ntree=500))
-
+crf.fit
 crf.fit.pred.train <- predict(crf.fit, newdata=trainingData, OOB = TRUE, type="prob")
 unlist.Pred.train <- matrix(unlist(crf.fit.pred.train), ncol=2,  byrow = TRUE)
 pred.train.crf <- prediction(unlist.Pred.train[,2], trainingData$FRACTURE)
@@ -441,7 +442,7 @@ qqnorm(frac.no$AGE, main = "Distribution of AGE in Fracture=No Group"); qqline(f
 set.seed(999)
 
 lda.fit <- lda(FRACTURE ~ AGE + HEIGHT + WEIGHT + BMI, data = trainingData)
-
+lda.fit
 #ROC on training data set
 ldaprd <- predict(lda.fit, newdata = trainingData)$posterior
 ldaprd <- ldaprd[,2]
