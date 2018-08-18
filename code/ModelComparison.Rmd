@@ -207,7 +207,7 @@ confusionMatrix(data = as.factor(as.numeric(pdata_logical)), reference = as.fact
 ```{r logisticRegressionNormal}
 set.seed(999)
 
-logit.fit <- glm(FRACTURE ~ AGE + HEIGHT + PRIORFRAC + MOMFRAC + ARMASSIST + RATERISK + SMOKE, data = trainingData, family = binomial(link = "logit"))
+logit.fit <- glm(FRACTURE ~ AGE + HEIGHT + PRIORFRAC + MOMFRAC + ARMASSIST + RATERISK , data = trainingData, family = binomial(link = "logit"))
 summary(logit.fit)
 
 # To exponentiate the log ODDS to make it ODDS Ratio and also get corresponding 95% CIs
@@ -249,7 +249,7 @@ confusionMatrix(data = as.factor(as.numeric(pdata_logical)), reference = as.fact
 set.seed(999)
 # Since top 3 predictors are Age, PriorFrac and RISK, adding model complexity
 # via interactions 
-logit.fit.interactions <- glm(FRACTURE ~ AGE + HEIGHT + PRIORFRAC + MOMFRAC + ARMASSIST + RATERISK + SMOKE + AGE:PRIORFRAC + RATERISK:AGE + MOMFRAC:ARMASSIST, data = trainingData, family = binomial(link = "logit"))
+logit.fit.interactions <- glm(FRACTURE ~ AGE + HEIGHT + PRIORFRAC + MOMFRAC + ARMASSIST + RATERISK + AGE:PRIORFRAC + RATERISK:AGE + MOMFRAC:ARMASSIST, data = trainingData, family = binomial(link = "logit"))
 summary(logit.fit.interactions)
 # First Predicting the responses on training data set itself
 logistic.fit.pred.train.interaction <- predict(logit.fit.interactions, newdata=trainingData, type = "response")
