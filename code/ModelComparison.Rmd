@@ -529,3 +529,32 @@ prd.test <- predict(qda.fit, newdata = validationData)$class
 confusionMatrix(data = prd.test, reference = validationData$FRACTURE)
 
 ```
+
+
+```{r plotttingInteractions, message=FALSE} 
+frac.yes <- subset(dataset, FRACTURE == 1)
+frac.no <- subset(dataset, FRACTURE == 0)
+
+box.Prior.Age.Frac.Yes <- ggplot(frac.yes, aes(x = PRIORFRAC, y = AGE, col = PRIORFRAC, fill = PRIORFRAC )) + 
+  geom_boxplot(alpha = 0.2) + 
+  theme(legend.position = "none") + 
+  scale_color_manual(values = c("blue", "red")) +
+  scale_fill_manual(values = c("blue", "red")) +
+  ggtitle("FRACTURE = YES GROUP")
+
+box.Prior.Age.Frac.No <- ggplot(frac.no, aes(x = PRIORFRAC, y = AGE, col = PRIORFRAC, fill = PRIORFRAC )) + 
+  geom_boxplot(alpha = 0.2) + 
+  theme(legend.position = "none") + 
+  scale_color_manual(values = c("blue", "red")) +
+  scale_fill_manual(values = c("blue", "red"))+
+   ggtitle("FRACTURE = NO GROUP")
+
+grid.arrange(box.Prior.Age.Frac.No, box.Prior.Age.Frac.Yes, nrow = 1, ncol = 2)
+
+#MOMFRAC:ARMASSIST
+
+par(mfrow = c(1, 2))
+mosplot.Frac.No <- mosaicplot(CrossTable(frac.no$MOMFRAC, frac.no$ARMASSIST)$t, main = "FRACTURE = NO GROUP", xlab = "MOMFRAC", ylab = "ARMASSIST", color = T)
+mosplot.Frac.Yes <- mosaicplot(CrossTable(frac.yes$MOMFRAC, frac.yes$ARMASSIST)$t, main = "FRACTURE = YES GROUP", xlab = "MOMFRAC", ylab = "ARMASSIST", color = T)
+
+```
