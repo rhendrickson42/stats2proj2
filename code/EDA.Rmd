@@ -185,8 +185,10 @@ print(std)
 <p>BMI and Weight show to be highly correlation which makes sense since weight is a factor in calculation of BMI. We will remove Weight from models in order to meet assumptions.</p>
 <br>
 ```{r}
-#Training dataset without ID columns
-corrplot(cor(trainingData[2:5]), method = "number", type = "upper", order = "hclust", 
+#Training dataset without ID columns, convert PRIORFRAC to numeric for corrplot
+train_df <- trainingData[2:5]
+train_df$PRIORFRAC <- as.numeric(train_df$PRIORFRAC)
+corrplot(cor(train_df), method = "number", type = "upper", order = "hclust", 
          tl.col = "black", tl.srt = 45)
 ```
 ### Visualization of Continuous Variables
@@ -242,12 +244,13 @@ pairs(dataset_numeric, col=dataset[,5])
 # density plots for each attribute by class value
 X <- set_noID[2:5]
 Y <- set_noID$FRACTURE
+X$PRIORFRAC <- as.numeric(X$PRIORFRAC)
 scales <- list(x=list(relation="free"), y=list(relation="free"))
 par(mfrow=c(1,1))
-featurePlot(x=set_noID[2:5], y=set_noID$FRACTURE, plot="density", scales=scales)
+featurePlot(x=X, y=set_noID$FRACTURE, plot="density", scales=scales)
 #Box And Whisker Plots By Class
 par(mfrow=c(1,1))
-featurePlot(x=set_noID[2:5], y=set_noID$FRACTURE, plot="box")
+featurePlot(x=X, y=set_noID$FRACTURE, plot="box")
 ```
 <br>
 ## Checking the Balance of the Full dataset
@@ -406,7 +409,13 @@ plot(cumsum(prop_varex), xlab = "Principal Component",
 #Transposting the predictor matrix and giving the response categories its
 #row names.
 #Get Training Set
-dat.train <- new_my_data
+
+# convert factors to numeric for pheatmap
+temp <- trainingData
+indx <- sapply(temp, is.factor)
+temp[indx] <- lapply(temp[indx], function(x) as.numeric(as.character(x)))
+
+dat.train <- temp
 
 dat.train.x <- dat.train[,1:ncol(dat.train)]
 dat.train.y <- dat.train$FRACTURE
