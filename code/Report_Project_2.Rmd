@@ -34,6 +34,7 @@ library(kableExtra)
 
 ## **Objective 1** - EDA and logistic regression model
 
+TODO: remove below from project description
 Display the ability to perform EDA and build a logistic regression model
 
 •	Perform your logistic regression analysis and provide interpretation of the regression coefficients including hypothesis testing, and confidence intervals. For simplicity sake, you do not need to include interactions with this model. Comment on the  practical vs statistical significance of the deemed important factors..
@@ -43,6 +44,8 @@ Logistical Considerations.
 •	Just like last time, this does not have to be extremely fancy in terms of the model building approach, let EDA, feature selection, and overall intuition guide you.
 
 ## Introduction
+
+TODO:
 
 ## Data Description
 <p>The data set provided is about predicting whether a woman with osteoporosis will have another bone fracture.  Of course getting a bone fracture is somewhat circumstantial, but with this disease every day life could trigger a break if the progression of the disease is strong.  
@@ -136,18 +139,90 @@ include_graphics(myimages)
 
 ## Restatement of Problem and the overall approach to solve it.
 
+TODO:
+
 ## Model Selection
+
+TODO: add a description for the below selection
+
+**Simple Logistic Model Fit:**  
+
+```
+Call:
+glm(formula = FRACTURE ~ AGE + HEIGHT + PRIORFRAC + MOMFRAC + 
+    ARMASSIST + RATERISK, family = binomial(link = "logit"), 
+    data = trainingData)
+
+Deviance Residuals: 
+    Min       1Q   Median       3Q      Max  
+-1.5491  -0.7377  -0.5763   0.2298   2.2214  
+
+Coefficients:
+            Estimate Std. Error z value Pr(>|z|)   
+(Intercept)  3.33365    3.80104   0.877  0.38047   
+AGE          0.04347    0.01578   2.755  0.00587 **
+HEIGHT      -0.04881    0.02165  -2.254  0.02418 * 
+PRIORFRAC1   0.22281    0.30097   0.740  0.45912   
+MOMFRAC1     0.33522    0.38263   0.876  0.38097   
+ARMASSIST1   0.68418    0.27861   2.456  0.01406 * 
+RATERISK.L   0.50762    0.24656   2.059  0.03951 * 
+RATERISK.Q  -0.06727    0.22219  -0.303  0.76209 
+```
+**Model Equation**
+
+$log(\pi)$ = 3.33365 +  0.04347 * AGE - 0.04881 * HEIGHT + 0.22281 * PRIORFRAC + 0.33522 * MOMFRAC    
+                + 0.68418 * ARMASSIST + 0.50762 * RATERISK_2 - 0.06727 * RATERISK_3    
+
+```
+Coefficients and 95% Confidence Intervals converted to Normal Scale 
+            ODDs_Ratio     2.5 %       97.5 %
+(Intercept) 28.0403767 0.0172620 5.378401e+04
+AGE          1.0444253 1.0128322 1.077662e+00
+HEIGHT       0.9523628 0.9118527 9.929059e-01
+PRIORFRAC1   1.2495774 0.6857875 2.237992e+00
+MOMFRAC1     1.3982464 0.6449924 2.917750e+00
+ARMASSIST1   1.9821443 1.1469582 3.428352e+00
+RATERISK.L   1.6613370 1.0283916 2.713240e+00
+RATERISK.Q   0.9349462 0.6060378 1.451499e+00
+
+```
 
 ## Checking Assumptions
 
-## Parameter Interpretation
+TODO: Lokesh please add assumptions
+
+## *Interpretation of the Coefficients:*  
+
+
+For AGE: All the other variables being constant, for every one-year increase in age of women, the odds of being getting a fracture in first year (versus not getting a fracture in first year) increases by a factor of 1.04(4% increase). The 95% Confidence Interval for this multiplicative factor is from 1.01(1% increase) to 1.08(8% increase).  
+
+For HEIGHT: All the other variables being constant, for every one unit increase in height of women, the odds of being getting a fracture in first year (versus not getting a fracture in first year) decreases by a factor of 0.95(5% decrease). The 95% Confidence Interval for this multiplicative factor is from 0.91(9% decrease) to 0.99(1% decrease).  
+
+** All the below coefficients are of format:
+The estimated odds for Person X with/without characteristic are M times the odds (of developing fracture in first year), for another Person Y without/with that characteristic. **  
+
+For PRIORFRAC: All the other variables being constant, the estimated odds for a woman, who has history of prior fracture, are 1.25 (25% more) times the odds of having fracture again in first year, for a woman who didn’t have prior history of fracture. The 95% Confidence Interval for this estimated odds ratio is from 0.69 times to 2.23 times.
+
+For MOMFRAC: All the other variables being constant, the estimated odds for a woman, whose mother had hip fracture, are 1.40 (40% more) times the odds of having fracture in first year, for a woman whose mother didn’t have hip fracture. The 95% Confidence Interval for this estimated odds ratio is from 0.64 times to 2.91 times.
+
+For ARMASSIST: All the other variables being constant, the estimated odds for a woman, who needed arms to stand from a chair, are 1.98 (98% more) times the odds of having fracture in first year, for a woman who didn’t need arms to stand from a chair. The 95% Confidence Interval for this estimated odds ratio is from 1.15 times to 3.43 times.
+
+For RATERISK.2: All the other variables being constant, the estimated odds for a woman, who self-reported that her risk for developing fracture is same as others of the same age, are 1.66 (66% more) times the odds of having fracture in first year, for a woman who self-reported that her risk for developing fracture is less than others of the same age. The 95% Confidence Interval for this estimated odds ratio is from 1.03 times to 2.71 times.
+
+For RATERISK.3: All the other variables being constant, the estimated odds for a woman, who self-reported that her risk for developing fracture is greater than others of the same age, are 0.93 (7% less) times the odds of having fracture in first year, for a woman who self-reported that her risk for developing fracture is less than others of the same age. The 95% Confidence Interval for this estimated odds ratio is from 0.61 times to 1.45 times.
+
+
+
+
+
+
 
 ## Final conclusions from the analysis of Objective 1
 
 
 
 ```
-to do:
+TODO:
 
 
 take writeup from EDA and place here with reference to figures, etc
