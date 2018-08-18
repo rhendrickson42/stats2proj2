@@ -184,7 +184,7 @@ print(std)
 ###Correlations
 <p>BMI and Weight show to be highly correlation which makes sense since weight is a factor in calculation of BMI. We will remove Weight from models in order to meet assumptions.</p>
 <br>
-```{r}
+```{r correlation_plot}
 #Training dataset without ID columns, convert PRIORFRAC to numeric for corrplot
 train_df <- trainingData[2:5]
 train_df$PRIORFRAC <- as.numeric(train_df$PRIORFRAC)
@@ -192,47 +192,73 @@ corrplot(cor(train_df), method = "number", type = "upper", order = "hclust",
          tl.col = "black", tl.srt = 45)
 ```
 ### Visualization of Continuous Variables
-For the categorical variables, we show an unbalanced dataset of subjects with majority false PRIORFRAC, PREMENO, MOMFRAC, ARMASSIST, and SMOKE. There was a good balance of subjects in the 3 levels of RATERISK. An unblanced dataset will cause a model to favor the skewed numbers.
+For the categorical variables, we show an unbalanced dataset of subjects with majority false PRIORFRAC, PREMENO, MOMFRAC, ARMASSIST, and SMOKE. There was a good balance of subjects in the 3 levels of RATERISK. An unblanced dataset will cause a model to favor the skewed numbers. 
 
-For the continous variables, we can see that BMI and Weight are highly correlated and weight and height are also correlated. When building the model, we will remove Weight as to meet the assumptions of logistic regression.
+For the continous variables, we can see that BMI and Weight are highly correlated and weight and height are also correlated. When building the model, we will remove Weight as to meet the assumptions of logistic regression. 
+
+
 <br>
-```{r}
+```{r visual_num_var_Histograms}
 # Data visualizations
 dataset_numeric = numericVar
+
 #Histograms
-par(mfrow=c(2,2)) # put four figures in a row (2*4)
+par(mfrow=c(2,2))
 for (i in 1:4) {
   hist(dataset_numeric[,i],xlab=names(dataset_numeric)[i],main=names(dataset_numeric)[i])
 }
+```
+In the full dataset we have a majority of subjects are younger. The range of ages is between 55-90.
 
+About 300 out of 500 subjects are in the 20-30 BMI score range.
+
+Majority of subjects landed between 150 and 180 inches in height.
+
+We show a majority of subjects are in the weight range of 60-80. 
+
+```{r visual_cat_var_densityplot}
 #Density Plots
 par(mfrow=c(2,2))
 for(i in 1:4) {
   plot(density(dataset_numeric[,i]), xlab=names(dataset_numeric)[i], main=names(dataset_numeric)[i])
 }
+```
+
+```{r}
 
 #Box And Whisker Plots
 par(mfrow=c(2,2))
 for(i in 1:4) {
   boxplot(dataset_numeric[,i], xlab=names(dataset_numeric)[i], main=names(dataset_numeric)[i])
 }
+```
 
-#Barplots, which is used to count the accurances for categorical attributes 
-dataset_categorical = set_noID[,-c(2:5,11)]
+<p>Frequency counts of subjects with Fracture. Compare Full, Train and Validation</p>
+```{r} FractureCounts}
+par(mfrow=c(1,3))
+#par(mar=c(5,8,4,2)) # increase y-axis margin.
+count_full <- table(dataset$FRACTURE)
+count_trn <- table(trainingData$FRACTURE)
+count_test <- table(validationData$FRACTURE)
 
-par(mfrow=c(3,2))
-for(i in 1:6) {
-  counts <- table(dataset_categorical[,i]) # get the count for each categorical value
-  name <- names(dataset_categorical)[i]
-  barplot(counts, main=name,col=c("lightblue","darkred"))
-}
+
+barplot(counts,main="Full Dataset", ylab="Count", col=c("orange","blue"),names.arg=c("0 No Fracture", "1 Fracture"), cex.names=0.8)
+
+barplot(count_trn,main="Training Dataset", ylab="Count", col=c("orange","blue"),names.arg=c("0 No Fracture", "1 Fracture"), cex.names=0.8)
+
+barplot(count_test,main="Validation Dataset", ylab="Count", col=c("orange","blue"),names.arg=c("0 No Fracture", "1 Fracture"), cex.names=0.8)
+
+```
+
+```{r}
 
 #Multivariate Visualization 
 correlations1=cor(dataset_numeric)
 print(correlations1)
 par(mfrow=c(1,1))
 corrplot(correlations1, methods="circle")
-
+```
+```{r}
 # pair-wise scatterplots of the numeric attributes
 par(mfrow=c(1,1))
 pairs(dataset_numeric)
@@ -251,6 +277,7 @@ featurePlot(x=X, y=set_noID$FRACTURE, plot="density", scales=scales)
 #Box And Whisker Plots By Class
 par(mfrow=c(1,1))
 featurePlot(x=X, y=set_noID$FRACTURE, plot="box")
+
 ```
 <br>
 ## Checking the Balance of the Full dataset
