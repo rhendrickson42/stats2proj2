@@ -3,11 +3,11 @@ title: "MSDS6372 Project 2 - Osteoporosis in Women"
 author: "Caroll Rodriguez, Rajat Chandna, Randall Hendrickson, Lokesh Maganti"
 date: "August 18, 2018"
 output: 
+  pdf_document:
+    toc: yes
   html_document:
     toc: yes
     keep_md: yes
-  pdf_document:
-    toc: yes
 ---
 <style type="text/css">
 
@@ -247,6 +247,65 @@ take writeup from EDA and place here with reference to figures, etc
 
 •	Provide a summary table of the performance across the competing methods. Summarize the overall findings.  A really great report will also give insight as to why the “best” model won out.  This is where a thorough EDA will always help.
 
+## Visualizations from Model Comparisions
+
+```{r, echo = FALSE, out.width="50%"}
+myimages<-list.files("./model_comparison_images/fracture_counts_cv", pattern = ".png", full.names = TRUE)
+include_graphics(myimages)
+```
+
+#### Figure 7 - Fracture Counts  
+
+```{r, echo = FALSE, out.width="33%"}
+myimages<-list.files("./model_comparison_images/lr_assumptionscheck", pattern = ".png", full.names = TRUE)
+include_graphics(myimages)
+```
+
+#### Figure 8 - Logistic Regression Assumptions Check  
+
+
+```{r, echo = FALSE, out.width="25%"}
+myimages<-list.files("./model_comparison_images/lr_normal", pattern = ".png", full.names = TRUE)
+include_graphics(myimages)
+```
+
+#### Figure 9 - Logistic Regression Normal - Train, Test, Linear, Cooks  
+
+
+
+```{r, echo = FALSE, out.width="25%"}
+myimages<-list.files("./model_comparison_images/plotting_interactions", pattern = ".png", full.names = TRUE)
+include_graphics(myimages)
+```
+
+#### Figure 10 - Logistic Regression - Interactions  
+
+
+```{r, echo = FALSE, out.width="25%"}
+myimages<-list.files("./model_comparison_images/random_forests", pattern = ".png", full.names = TRUE)
+include_graphics(myimages)
+```
+
+#### Figure 11 - Logistic Regression - Random Forests  
+
+
+```{r, echo = FALSE, out.width="25%"}
+myimages<-list.files("./model_comparison_images/conditional_random_forests", pattern = ".png", full.names = TRUE)
+include_graphics(myimages)
+```
+
+#### Figure 12 - Logistic Regression - Conditional Random Forests  
+
+```{r, echo = FALSE, out.width="25%"}
+myimages<-list.files("./model_comparison_images/LDA", pattern = ".png", full.names = TRUE)
+include_graphics(myimages)
+```
+
+#### Figure 13 - LDA  
+
+
+## End Visualizations from Model Comparison
+
 ## Record predictive performance from objective 1
 
 ## Another competing model (interaction terms)
@@ -271,15 +330,7 @@ take writeup from EDA and place here with reference to figures, etc
 
 ## Conclusion/Discussion
 
-
-```
-to do:
-
-
-take writeup from EDA and place here with reference to figures, etc
-
-```
-
+TODO:
 
 
 ## ***Appendix*** ==========================================  
