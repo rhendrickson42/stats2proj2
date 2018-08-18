@@ -1,9 +1,27 @@
 ---
-title: "Untitled"
+title: "Model Comparison"
 author: "Rajat Chandna"
 date: "August 17, 2018"
-output: html_document
+output:
+  html_document:
+    keep_md: yes
+    toc: yes
+  pdf_document:
+    toc: yes
 ---
+<style type="text/css">
+
+body, td {
+   font-size: 16px;
+}
+code.r{
+  font-size: 8px;
+}
+pre {
+  font-size: 10px
+}
+/* code.r will control the font size for R code echoed from the code chunk, while pre will apply to any R results output from the code. */
+</style>
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -60,7 +78,7 @@ Required_Packages=c("readxl",
 Install_And_Load(Required_Packages);
 ```
 
-```{r}
+```{r read_data, echo=FALSE}
 glow_data_file <- here("data", "glow500.csv")
 dataset_loc <- 
 dataset <- read.csv(glow_data_file, sep=",", stringsAsFactors = TRUE, header=TRUE,na.strings=c(""))
@@ -92,7 +110,7 @@ str(dataset)
 
 ##Create Train and Validation Datasets
 <br>
-```{r}
+```{r, create_train_test, tidy=TRUE, tidy.opts=list(width.cutoff=80)}
 set.seed(999)
 validation_index = createDataPartition(dataset$FRACTURE, p=0.70, list=FALSE)
 validationData = dataset[-validation_index,c(4:14)]
@@ -307,7 +325,7 @@ varImpPlot(rf.fit)
 ```
 
 
-## Running Conditional Random Forst Fit
+## Running Conditional Random Forest Fit
 ```{r runningConditionalRandomForest}
 set.seed(999)
 
@@ -347,7 +365,7 @@ sort(relativeImp, decreasing = T)
 ```
 
 ## LDA AND QDA Model fit
-```{r runningLDA}
+```{r runningLDA, message=FALSE} 
 library(MASS)
 library(gridExtra)
 
