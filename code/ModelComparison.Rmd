@@ -52,7 +52,8 @@ Required_Packages=c("readxl",
 "e1071",
 "here",
 "tidyr",
-"party"
+"party",
+"heplots"
 );
 
 # Call the Function
@@ -185,7 +186,7 @@ auc.train <- performance(pred.train, measure = "auc")
 auc.train <- auc.train@y.values
 
 ##Plot ROC for training Set
-plot(roc.perf)
+plot(roc.perf, main="Logistic Reg Training Data Set")
 abline(a=0, b= 1) #Ref line indicating poor performance
 text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
 
@@ -197,7 +198,7 @@ pred.test <- prediction(logistic.fit.pred.test, validationData$FRACTURE)
 roc.perf1 = performance(pred.test, measure = "tpr", x.measure = "fpr")
 auc.val1 <- performance(pred.test, measure = "auc")
 auc.val1 <- auc.val1@y.values
-plot(roc.perf1)
+plot(roc.perf1, main="Logistic Reg Validation Data Set")
 abline(a=0, b= 1)
 text(x = .40, y = .6,paste("AUC = ", round(auc.val1[[1]],3), sep = ""))
 
@@ -223,7 +224,7 @@ auc.train <- performance(pred.train.interaction, measure = "auc")
 auc.train <- auc.train@y.values
 
 ##Plot ROC for training Set
-plot(roc.perf)
+plot(roc.perf, main="Logistic Reg With Interactions Training Data Set")
 abline(a=0, b= 1) #Ref line indicating poor performance
 text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
 
@@ -235,7 +236,7 @@ pred.test.interaction <- prediction(logistic.fit.pred.test.interaction, validati
 roc.perf1 = performance(pred.test.interaction, measure = "tpr", x.measure = "fpr")
 auc.val1 <- performance(pred.test.interaction, measure = "auc")
 auc.val1 <- auc.val1@y.values
-plot(roc.perf1)
+plot(roc.perf1, main="Logistic Reg With Interactions Validations Data Set")
 abline(a=0, b= 1)
 text(x = .40, y = .6,paste("AUC = ", round(auc.val1[[1]],3), sep = ""))
 
@@ -276,7 +277,7 @@ pred.train.rf <- prediction(rf.fit.pred.train[,2], trainingData$FRACTURE)
 roc.perf = performance(pred.train.rf, measure = "tpr", x.measure = "fpr")
 auc.train <- performance(pred.train.rf, measure = "auc")
 auc.train <- auc.train@y.values
-plot(roc.perf)
+plot(roc.perf, main="Random Forest Training Data Set")
 abline(a=0, b= 1)
 text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
 
@@ -289,7 +290,7 @@ pred.test.rf <- prediction(rf.fit.pred.test[,2], validationData$FRACTURE)
 roc.perf = performance(pred.test.rf, measure = "tpr", x.measure = "fpr")
 auc.train <- performance(pred.test.rf, measure = "auc")
 auc.train <- auc.train@y.values
-plot(roc.perf)
+plot(roc.perf, main="Random Forest Validation Data Set")
 abline(a=0, b= 1)
 text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
 
@@ -318,7 +319,7 @@ pred.train.crf <- prediction(unlist.Pred.train[,2], trainingData$FRACTURE)
 roc.perf = performance(pred.train.crf, measure = "tpr", x.measure = "fpr")
 auc.train <- performance(pred.train.crf, measure = "auc")
 auc.train <- auc.train@y.values
-plot(roc.perf)
+plot(roc.perf, main="Conditional Random Forest Training Data Set")
 abline(a=0, b= 1)
 text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
 
@@ -332,7 +333,7 @@ pred.test.crf <- prediction(unlist.Pred.test[,2], validationData$FRACTURE)
 roc.perf = performance(pred.test.crf, measure = "tpr", x.measure = "fpr")
 auc.train <- performance(pred.test.crf, measure = "auc")
 auc.train <- auc.train@y.values
-plot(roc.perf)
+plot(roc.perf, main="Conditional Random Forest Validation Data Set")
 abline(a=0, b= 1)
 text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
 
@@ -345,48 +346,10 @@ sort(relativeImp, decreasing = T)
 
 ```
 
-## LDA Model fit
+## LDA AND QDA Model fit
 ```{r runningLDA}
 library(MASS)
 library(gridExtra)
-set.seed(999)
-
-plot(dataset[,c(5:8)], col=dataset$FRACTURE)
-
-lda.fit <- lda(FRACTURE ~ AGE + HEIGHT + WEIGHT + BMI, data = trainingData)
-
-#ROC on training data set
-ldaprd <- predict(lda.fit, newdata = trainingData)$posterior
-ldaprd <- ldaprd[,2]
-pred.train <- prediction(ldaprd, trainingData$FRACTURE)
-roc.perf = performance(pred.train, measure = "tpr", x.measure = "fpr")
-auc.train <- performance(pred.train, measure = "auc")
-auc.train <- auc.train@y.values
-
-#Plot ROC on Training Data
-plot(roc.perf,main="LDA")
-abline(a=0, b= 1) #Ref line indicating poor performance
-text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
-
-prd <- predict(lda.fit, newdata = trainingData)$class
-confusionMatrix(data = prd, reference = trainingData$FRACTURE)
-
-
-#ROC on test data set
-ldaprd.test <- predict(lda.fit, newdata = validationData)$posterior
-ldaprd.test <- ldaprd.test[,2]
-pred.test <- prediction(ldaprd.test, validationData$FRACTURE)
-roc.perf = performance(pred.test, measure = "tpr", x.measure = "fpr")
-auc.train <- performance(pred.test, measure = "auc")
-auc.train <- auc.train@y.values
-
-#Plot ROC on Training Data
-plot(roc.perf,main="LDA")
-abline(a=0, b= 1) #Ref line indicating poor performance
-text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
-
-prd.test <- predict(lda.fit, newdata = validationData)$class
-confusionMatrix(data = prd.test, reference = validationData$FRACTURE)
 
 ## Assumption of Eq Variance / CoVariance 
 box.AGE <- ggplot(dataset, aes(x = FRACTURE, y = AGE, col = FRACTURE, fill = FRACTURE)) + 
@@ -415,6 +378,121 @@ box.BMI <- ggplot(dataset, aes(x = FRACTURE, y = BMI, col = FRACTURE, fill = FRA
 
 grid.arrange(box.AGE, box.HEIGHT, box.WEIGHT, box.BMI, nrow = 2, ncol = 2)
 
-#covEllipses(diabetes[,1:8], diabetes$Outcome, fill = TRUE, pooled = FALSE,  col = c("blue", "red"), variables = c(1:5, 8), fill.alpha = 0.05)
+covEllipses(dataset[,c(5:8)], dataset$FRACTURE, fill = TRUE, pooled = FALSE,  col = c("blue", "red"), variables=1:4, fill.alpha = 0.05)
+
+# 
+# Conducting Levene Test
+leveneTest(AGE ~ FRACTURE, dataset) # Came Back Not Significant
+leveneTest(HEIGHT ~ FRACTURE, dataset)
+leveneTest(WEIGHT ~ FRACTURE, dataset)
+leveneTest(BMI ~ FRACTURE, dataset)
+# Came Back Not Significant, Confirms findings from previous plots
+
+density.AGE <- ggplot(dataset, aes(x = AGE, y = ..density.., col = FRACTURE)) + 
+  geom_density(aes(y = ..density..)) + 
+  scale_color_manual(values = c("blue", "red")) + 
+  theme(legend.position = "none")
+
+density.HEIGHT <- ggplot(dataset, aes(x = HEIGHT, y = ..density.., col = FRACTURE)) + 
+  geom_density(aes(y = ..density..)) + 
+  scale_color_manual(values = c("blue", "red")) + 
+  theme(legend.position = "none")
+
+density.WEIGHT <- ggplot(dataset, aes(x = WEIGHT, y = ..density.., col = FRACTURE)) + 
+  geom_density(aes(y = ..density..)) + 
+  scale_color_manual(values = c("blue", "red")) + 
+  theme(legend.position = "none")
+
+density.BMI <- ggplot(dataset, aes(x = BMI, y = ..density.., col = FRACTURE)) + 
+  geom_density(aes(y = ..density..)) + 
+  scale_color_manual(values = c("blue", "red")) + 
+  theme(legend.position = "none")
+
+grid.arrange(density.AGE, density.HEIGHT, density.WEIGHT, density.BMI, nrow = 2, ncol = 2)
+
+# Check QQ Plot for AGE to ascertain Normality in BOTH Groups
+frac.yes <- subset(dataset, FRACTURE == 1)
+frac.no <- subset(dataset, FRACTURE == 0)
+# Plot
+qqnorm(frac.yes$AGE, main = "Distribution of AGE in Fracture=Yes Group"); qqline(frac.yes$AGE, col = 2)
+qqnorm(frac.no$AGE, main = "Distribution of AGE in Fracture=No Group"); qqline(frac.no$AGE, col = 2)
+
+
+## Assumptions for Normality and of Equal Variance-Coavariance matrices Are Successfully Met.
+## Run the LDA Now
+
+set.seed(999)
+
+lda.fit <- lda(FRACTURE ~ AGE + HEIGHT + WEIGHT + BMI, data = trainingData)
+
+#ROC on training data set
+ldaprd <- predict(lda.fit, newdata = trainingData)$posterior
+ldaprd <- ldaprd[,2]
+pred.train <- prediction(ldaprd, trainingData$FRACTURE)
+roc.perf = performance(pred.train, measure = "tpr", x.measure = "fpr")
+auc.train <- performance(pred.train, measure = "auc")
+auc.train <- auc.train@y.values
+
+#Plot ROC on Training Data
+plot(roc.perf,main="LDA Training Data Set")
+abline(a=0, b= 1) #Ref line indicating poor performance
+text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
+
+prd <- predict(lda.fit, newdata = trainingData)$class
+confusionMatrix(data = prd, reference = trainingData$FRACTURE)
+
+
+#ROC on test data set
+ldaprd.test <- predict(lda.fit, newdata = validationData)$posterior
+ldaprd.test <- ldaprd.test[,2]
+pred.test <- prediction(ldaprd.test, validationData$FRACTURE)
+roc.perf = performance(pred.test, measure = "tpr", x.measure = "fpr")
+auc.train <- performance(pred.test, measure = "auc")
+auc.train <- auc.train@y.values
+
+#Plot ROC on Training Data
+plot(roc.perf,main="LDA Validation Data Set")
+abline(a=0, b= 1) #Ref line indicating poor performance
+text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
+
+prd.test <- predict(lda.fit, newdata = validationData)$class
+confusionMatrix(data = prd.test, reference = validationData$FRACTURE)
+
+## Running QDA to see if it improves AUC
+
+qda.fit <- qda(FRACTURE ~ AGE + HEIGHT + WEIGHT + BMI, data = trainingData)
+
+#ROC on training data set
+qdaprd <- predict(qda.fit, newdata = trainingData)$posterior
+qdaprd <- qdaprd[,2]
+pred.train <- prediction(qdaprd, trainingData$FRACTURE)
+roc.perf = performance(pred.train, measure = "tpr", x.measure = "fpr")
+auc.train <- performance(pred.train, measure = "auc")
+auc.train <- auc.train@y.values
+
+#Plot ROC on Training Data
+plot(roc.perf,main="QDA Training Data Set")
+abline(a=0, b= 1) #Ref line indicating poor performance
+text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
+
+prd <- predict(qda.fit, newdata = trainingData)$class
+confusionMatrix(data = prd, reference = trainingData$FRACTURE)
+
+
+#ROC on test data set
+qdaprd.test <- predict(qda.fit, newdata = validationData)$posterior
+qdaprd.test <- qdaprd.test[,2]
+pred.test <- prediction(qdaprd.test, validationData$FRACTURE)
+roc.perf = performance(pred.test, measure = "tpr", x.measure = "fpr")
+auc.train <- performance(pred.test, measure = "auc")
+auc.train <- auc.train@y.values
+
+#Plot ROC on Training Data
+plot(roc.perf,main="QDA Validation Data Set")
+abline(a=0, b= 1) #Ref line indicating poor performance
+text(x = .40, y = .6,paste("AUC = ", round(auc.train[[1]],3), sep = ""))
+
+prd.test <- predict(qda.fit, newdata = validationData)$class
+confusionMatrix(data = prd.test, reference = validationData$FRACTURE)
 
 ```
