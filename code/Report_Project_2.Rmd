@@ -34,18 +34,13 @@ library(kableExtra)
 
 ## **Objective 1** - EDA and logistic regression model
 
-TODO: remove below from project description
-Display the ability to perform EDA and build a logistic regression model
-
-•	Perform your logistic regression analysis and provide interpretation of the regression coefficients including hypothesis testing, and confidence intervals. For simplicity sake, you do not need to include interactions with this model. Comment on the  practical vs statistical significance of the deemed important factors..
-
-Logistical Considerations.
-
-•	Just like last time, this does not have to be extremely fancy in terms of the model building approach, let EDA, feature selection, and overall intuition guide you.
 
 ## Introduction
 
-TODO:
+The Global Longitudinal Study of Osteoporosis in Women (GLOW) (2005-2014) was a prospective cohort study of physician practices in the provision of prophylaxis and treatment against osteoporotic fractures. The goal of this research was to improve understanding of the risk and prevention of osteoporosis-related fractures among female residents of 10 countries who were 55 years of age and older. GLOW enrolled over 60,000 women through over 700 physicians in 10 countries, and conducted annual follow-up for up to 5 years through annual patient questionnaires.
+
+The aim of the GLOW study was to collect uniform data to help describe the distribution of risk factors for osteoporosis-related fracture. This analysis uses one dataset from this study to try to predict a fracture using these risk factors.
+
 
 ## Data Description
 <p>The data set provided is about predicting whether a woman with osteoporosis will have another bone fracture.  Of course getting a bone fracture is somewhat circumstantial, but with this disease every day life could trigger a break if the progression of the disease is strong.  
