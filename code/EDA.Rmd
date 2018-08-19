@@ -131,6 +131,8 @@ categoricalVar <- dataset[8:14]
 validation_index = createDataPartition(dataset$FRACTURE, p=0.70, list=FALSE)
 validationData = dataset[-validation_index,c(4:14)]
 trainingData = dataset[validation_index,c(4:14)]
+
+
 ```
 ##Summary Statistics
 <p>Assumptions
@@ -152,6 +154,29 @@ t(aggregate(HEIGHT~FRACTURE,data=dataset,summary))
 for (i in 4:7) {
   boxplot(dataset[,i] ~ dataset$FRACTURE,ylab=names(dataset)[i],xlab="FRACTURE", main="Summary for Continuous Variables ")
 }
+
+set.seed(999)
+validation_index = createDataPartition(dataset$FRACTURE, p=0.70, list=FALSE)
+validationData = dataset[-validation_index,c(4:14)]
+trainingData = dataset[validation_index,c(4:14)]
+
+table(dataset$FRACTURE)
+table(trainingData$FRACTURE)
+table(validationData$FRACTURE)
+
+#BarPlots of Fracture counts between full, training and validation datasets.
+par(mfrow=c(1,3))
+#par(mar=c(5,8,4,2)) # increase y-axis margin.
+count_full <- table(dataset$FRACTURE)
+count_trn <- table(trainingData$FRACTURE)
+count_test <- table(validationData$FRACTURE)
+
+
+barplot(count_full,main="Full Dataset", ylab="Count", col=c("orange","blue"),names.arg=c("0 No Fracture", "1 Fracture"), cex.names=0.8,ylim=c(0 , 500))
+
+barplot(count_trn,main="Training Dataset", ylab="Count", col=c("orange","blue"),names.arg=c("0 No Fracture", "1 Fracture"), cex.names=0.8,ylim=c(0 , 500))
+
+barplot(count_test,main="Validation Dataset", ylab="Count", col=c("orange","blue"),names.arg=c("0 No Fracture", "1 Fracture"), cex.names=0.8,ylim=c(0 , 500))
 ```
 ```{r}
 
