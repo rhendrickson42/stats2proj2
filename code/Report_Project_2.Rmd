@@ -131,6 +131,13 @@ include_graphics(myimages)
 #### Figure 6 - Clustering  
 
 
+```{r, echo = FALSE, out.width="50%"}
+myimages<-list.files("./model_comparison_images/fracture_counts_cv", pattern = ".png", full.names = TRUE)
+include_graphics(myimages)
+```
+
+#### Figure 7 - Fracture Counts  
+
 
 ## Restatement of Problem and the overall approach to solve it.
 
@@ -148,7 +155,7 @@ myimages<-list.files("./model_comparison_images/lr_assumptionscheck", pattern = 
 include_graphics(myimages)
 ```
 
-#### Figure 7 - Simple Logistic Regression lasso+logistic regression  
+#### Figure 8 - Simple Logistic Regression lasso+logistic regression  
 
 ```
 Then the lasso+logistic model was rerun with best value of lambda obtained(lambda.min) from previous procedure and was used to uncover feature set that was later used as initial starting point in our simple logistic model. The features selected after LASSO shrinkage procedure are as:
@@ -190,7 +197,7 @@ A scatter plot between two continuous predictors: AGE and HEIGHT as identified t
 include_graphics("./model_comparison_images/lr_normal/logisticRegressionNormal1-3.png")
 ```
 
-#### Figure X - Scatter Plot between AGE and HEIGHT and their log odds    
+#### Figure 9 - Scatter Plot between AGE and HEIGHT and their log odds    
 
 **Simple Logistic Model Fit:**  
 
@@ -233,7 +240,10 @@ On the initial model fit, VIFs and influential observation analysis was then per
 include_graphics("./model_comparison_images/lr_normal/logisticRegressionNormal-cooksD.png")
 ```
 
+#### Figure 10 - Logistic Regression - Cook's D    
+
 ```
+
               GVIF Df GVIF^(1/(2*Df))
 AGE       1.209972  1        1.099987
 HEIGHT    1.084342  1        1.041317
@@ -292,9 +302,10 @@ For RATERISK.3: All the other variables being constant, the estimated odds for a
 
 **Model Assessment:**  
 
-Model performance was assessed on validation data using following parameters:
-1.	AUC under ROC curve
-2.	Overall Accuracy, Sensitivity and Specificity values obtained from confusion matrix.
+Model performance was assessed on validation data using following parameters:  
+
+1.	AUC under ROC curve  
+2.	Overall Accuracy, Sensitivity and Specificity values obtained from confusion matrix.  
 
 
 ```{r, echo = FALSE, out.width="50%"}
@@ -302,6 +313,8 @@ pics<-c("./model_comparison_images/lr_normal/logisticRegressionNormal-1.png", ".
 
 include_graphics(pics)
 ```
+
+#### Figure 10 - Simple Logistic Regression - Performance    
 
 ```
 ## Confusion Matrix and Statistics
@@ -332,6 +345,9 @@ include_graphics(pics)
 ##
 ```
 
+#### Figure 11 - Simple Logistic Regression - Confusion Matrix    
+
+
 As seen from above ROC curves and confusion matrix:
 
 1.	Training set AUC is 71.6% and that for validation data set is about 67.7%. This is understandable since model was created using data training data set.  
@@ -358,80 +374,395 @@ To improve the accuracy and AUC for the model, we would next increase complexity
 
 \newpage
 
-## **Objective 2** - additional competing models
+## **Objective 2** - Additional Competing Models
 
-•	Record the predictive performance metrics from your simple, highly interpretable model from Objective 1.  
+•	The performance of the Simple Logistic Regression model developed earlier has performance characteristics described in Figure X and Figure X with the AUC under ROC curve and Confusion Matrix.  
 
+## **Logistic Regression Model with Interactions**  
 
-•	You must include one additional model which is also a more complicated logistic regression model than in Objective 1.  By complicated, I do not mean that you include more predictors (that will be somewhat sorted out in Objective 1), but rather model complexity through interaction terms, new variables created by the group, or transformations.
+**Model Considerations:**  
 
-•	Create another competing model using just the continuous predictors and use LDA or QDA.
+Since simple model was lacking in terms of complexity, hence interaction terms were added to the initial simple model in the hope of improving its predictive capability. After the recursive EDA process, three potential interactions were found from the dataset: AGE * PRIORFRAC, MOMFRAC * ARMASSIST and AGE * RATERISK. These could improve model performance as seen from below graphs that distribution for AGE variable among PRIOR FRAC groups is different for FRACTURE and NON-FRACTURE group and same is observed for MOMFRAC and ARMASSIST for levels of FRACTURE group as seen below:
 
-•	Use a nonparameteric model approach as a competing model.  Random forest for predictors that are both categorical and continuous or a k-nearest neighbors approach if just working with continuous predictors. 
-
-•	Provide a summary table of the performance across the competing methods. Summarize the overall findings.  A really great report will also give insight as to why the “best” model won out.  This is where a thorough EDA will always help.
-
-## Visualizations from Model Comparisions
 
 ```{r, echo = FALSE, out.width="50%"}
-myimages<-list.files("./model_comparison_images/fracture_counts_cv", pattern = ".png", full.names = TRUE)
-include_graphics(myimages)
-```
-
-#### Figure 7 - Fracture Counts  
-
-
-```{r, echo = FALSE, out.width="25%"}
-myimages<-list.files("./model_comparison_images/lr_normal", pattern = ".png", full.names = TRUE)
-include_graphics(myimages)
-```
-
-#### Figure 9 - Logistic Regression Normal - Train, Test, Linear, Cooks  
-
-
-
-```{r, echo = FALSE, out.width="25%"}
 myimages<-list.files("./model_comparison_images/plotting_interactions", pattern = ".png", full.names = TRUE)
 include_graphics(myimages)
 ```
 
-#### Figure 10 - Logistic Regression - Interactions  
+#### Figure 12 - Logistic Regression - Interactions  
 
 
-```{r, echo = FALSE, out.width="25%"}
-myimages<-list.files("./model_comparison_images/random_forests", pattern = ".png", full.names = TRUE)
-include_graphics(myimages)
+**Model Assumptions:**  
+
+Model assumptions are satisfied as we have seen from assumption section in simple logistic model section. 
+
+
+**Model Fit:**  
+
+The overall logistic regression model using selected variables and interactions came out significant. But, since interactions were added, multicollinearity is created and VIF for the model increased as seen below:
+
+```
+                         GVIF Df GVIF^(1/(2*Df))
+AGE                  1.997142  1        1.413203
+HEIGHT               1.102446  1        1.049975
+PRIORFRAC           67.052577  1        8.188564
+MOMFRAC              1.872604  1        1.368431
+ARMASSIST            1.292878  1        1.137048
+RATERISK          4440.469420  2        8.163140
+AGE:PRIORFRAC       71.017561  1        8.427192
+AGE:RATERISK      4423.340582  2        8.155256
+MOMFRAC:ARMASSIST    2.037634  1        1.427457
+
 ```
 
-#### Figure 11 - Logistic Regression - Random Forests  
+This issue was dealt by centering the AGE variable and re-running the model. The VIFs came back to normal values after centering on AGE variable was performed as seen below from VIFs after centering:  
+
+```
+AGE               1.997142  1        1.413203
+HEIGHT            1.102446  1        1.049975
+PRIORFRAC         1.293722  1        1.137419
+MOMFRAC           1.872604  1        1.368431
+ARMASSIST         1.292878  1        1.137048
+RATERISK          1.354533  2        1.078816
+AGE:PRIORFRAC     2.076106  1        1.440870
+AGE:RATERISK      1.295266  2        1.066816
+MOMFRAC:ARMASSIST 2.037634  1        1.427457
+
+```
+The model output is as below:  
+
+```
+glm(formula = FRACTURE ~ AGE + HEIGHT + PRIORFRAC + MOMFRAC + 
+    ARMASSIST + RATERISK + AGE:PRIORFRAC + RATERISK:AGE + MOMFRAC:ARMASSIST, 
+
+    family = binomial(link = "logit"), data = trainingData)
+
+Deviance Residuals: 
+    Min       1Q   Median       3Q      Max  
+-1.5521  -0.7592  -0.5543   0.2845   2.3802  
+
+Coefficients:
+                    Estimate Std. Error z value Pr(>|z|)   
+(Intercept)          6.25924    3.51520   1.781  0.07497 . 
+AGE                  0.60346    0.18440   3.273  0.00107 **
+HEIGHT              -0.04913    0.02191  -2.242  0.02495 * 
+PRIORFRAC1           0.38979    0.31394   1.242  0.21438   
+MOMFRAC1             0.74167    0.50795   1.460  0.14426   
+ARMASSIST1           0.80585    0.29990   2.687  0.00721 **
+RATERISK.L           0.58312    0.26591   2.193  0.02831 * 
+RATERISK.Q          -0.13762    0.23352  -0.589  0.55566   
+AGE:PRIORFRAC1      -0.45140    0.27996  -1.612  0.10688   
+AGE:RATERISK.L      -0.13870    0.24978  -0.555  0.57869   
+AGE:RATERISK.Q       0.14622    0.22380   0.653  0.51355   
+MOMFRAC1:ARMASSIST1 -0.74229    0.76220  -0.974  0.33011   
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+```
+Although no interaction was significant at alpha=0.05 level, interaction between AGE*PriorFrac looks promising (p-value = 0.10688). Hence, using the above model for model equation formulation.
+
+**Model Equation:**  
+
+**Model Assessment.**  
+
+Model performance was assessed on validation data using following parameters:  
+
+1.	AUC under ROC curve  
+
+2.	Overall Accuracy, Sensitivity and Specificity values obtained from confusion matrix.  
 
 
-```{r, echo = FALSE, out.width="25%"}
+```{r, echo = FALSE, out.width="50%"}
+pics<-c("./model_comparison_images/lr_normal/logisticRegressionNormal1-1.png", "./model_comparison_images/lr_normal/logisticRegressionNormal1-2.png")
+
+include_graphics(pics)
+```
+
+#### Figure 13 - Logistic Regression with Interactions - Performance    
+
+```
+## Confusion Matrix and Statistics
+##
+## Reference
+## Prediction 0 1
+## 0 105 30
+## 1 7 7
+##
+## Accuracy : 0.7517
+## 95% CI : (0.6743, 0.8187)
+## No Information Rate : 0.7517
+## P-Value [Acc > NIR] : 0.5440183
+##
+## Kappa : 0.16
+## Mcnemar's Test P-Value : 0.0002983
+##
+## Sensitivity : 0.9375
+## Specificity : 0.1892
+## Pos Pred Value : 0.7778
+## Neg Pred Value : 0.5000
+## Prevalence : 0.7517
+## Detection Rate : 0.7047
+## Detection Prevalence : 0.9060
+## Balanced Accuracy : 0.5633
+##
+## 'Positive' Class : 0
+##
+```
+#### Figure 14 - Logistic Regression with Interactions - Confusion Matrix    
+
+
+As seen from above ROC curves and confusion matrix:  
+1.	Training set AUC is 72.5% and that for validation data set is about 72.2%. This is understandable since model was created using data training data set.  
+2.	Overall Accuracy of the model is at 75.17% with high sensitivity 93.75% but low specificity 18.92 %.  
+3.	This model performed little better over simple model with AUC increasing from 67.7% to 72.2% and overall accuracy increasing from 74.5% to 75.17%.   
+4.	These slight increases in accuracy are consistent with the outcome received from model fit that none of the interactions added were highly significant. So, added complexity did increase the overall AUC by about 5 % but was not improved performance significantly.  
+5.	There relative low values of overall AUC and accuracy could be due to:  
+  a.	Still Missing complexity in the current model (in terms of higher order terms, transformations, further interactions) etc.
+  b.	The available feature set and number of samples available are not sufficient enough to accurate model most of the trends in actual population data.  
+  c.	Class imbalance that is present in original, training and validation data set. Especially, the number of true positive cases are very much underrepresented in both the training and test datasets and this could be the cause of low specificity values obtained from this model.  
+6.	 Specificity for the model could be improved by lower the cutoff for classification from its initial value of 0.5. This should be warranted since cost of not predicting true positive outweighs cost of predicting false positive in the current situation.  
+
+
+## **Random Forest and Conditional Random Forest Models**  
+
+**Model Considerations.**  
+
+To further account for the remaining complexity and improve model predictive ability, we ran the ensemble based random forest model. We ran both flavors of random forest model that is normal one and conditional random forest one. Normal random forest model is biased towards predictors with more levels since knowing these would decrease the entropy the most and provide more information. Hence, normal random forest favors predictors with more levels. Whereas, conditional random forest takes this into account and produce more unbiased trees than normal random forest by assigning more weights to certain nodes at the time of aggregation.  
+
+A recursive process was performed to tune the random forest model for ntee, mtry and maxnodes parameters. Without pruning the tree length, random forest overfitted on our relatively small training data set but performed poorly as compared to logistic regression on validation data set as seen below:
+
+
+```{r, echo = FALSE, out.width="50%"}
+pics<-c("./model_comparison_images/random_forests2/rf_train.png", "./model_comparison_images/random_forests2/rf_test.png")
+
+include_graphics(pics)
+```
+
+#### Figure 15 - Random Forests - Performance    
+
+Maxnodes parameter along with ntree and mtry parameters was adjusted so as to achieve better performance and then we proceeded with fitting the random forest model.  
+
+**Model Assumptions:**  
+
+Since random forest is a non-parametric test which relies upon ensemble techniques, it doesn’t require model assumptions to be satisfied before running the model.  
+
+
+**Model Fit.**  
+
+```
+Call:
+ randomForest(formula = FRACTURE ~ ., data = trainingData, mtry = 4,      ntree = 500, maxnodes = 12, importance = T) 
+               Type of random forest: classification
+                     Number of trees: 500
+No. of variables tried at each split: 4
+
+        OOB estimate of  error rate: 24.79%
+Confusion matrix:
+    0 1 class.error
+0 260 3  0.01140684
+1  84 4  0.95454545
+
+```
+
+```{r, echo = FALSE, out.width="50%"}
+pics<-c("./model_comparison_images/random_forests/runningRandomForest-3.png")
+
+include_graphics(pics)
+```
+
+#### Figure 16 - Random Forest   
+
+As predicted, random forest is assigning more importance to predictors with more levels. 
+
+**Model Assessment:**  
+
+
+```{r, echo = FALSE, out.width="50%"}
+pics<-c("./model_comparison_images/random_forests/runningRandomForest-1.png", "./model_comparison_images/random_forests/runningRandomForest-2.png")
+
+include_graphics(pics)
+```
+
+#### Figure 17 - Conditional Random Forests   
+
+```
+Confusion Matrix and Statistics
+
+          Reference
+Prediction   0   1
+         0 111  37
+         1   1   0
+                                          
+               Accuracy : 0.745           
+                 95% CI : (0.6672, 0.8128)
+    No Information Rate : 0.7517          
+    P-Value [Acc > NIR] : 0.6175          
+                                          
+                  Kappa : -0.0132         
+ Mcnemar's Test P-Value : 1.365e-08       
+                                          
+            Sensitivity : 0.9911          
+            Specificity : 0.0000          
+         Pos Pred Value : 0.7500          
+         Neg Pred Value : 0.0000          
+             Prevalence : 0.7517          
+         Detection Rate : 0.7450          
+   Detection Prevalence : 0.9933          
+      Balanced Accuracy : 0.4955          
+
+```
+#### Figure 18 - Conditional Random Forest Confusion Matrix   
+
+
+  As seen from above ROC curves and confusion matrix:
+1.	Random Forest model improves on overall AUC performance slightly and takes it to 74.2% as compared to logistic regression with interaction model that had 72.5% AUC. So it did model some extra remaining complexity.  
+
+2.	This model performed really badly as compared to other models in classifying true positives and have specificity value of zero.  
+
+3.	This could be due to the fact that our training and test datasets have slight proportion of positive cases and model is unable to capture trends in positive observations as accurately as it captured for negative observations. Small sample sizes in training and validation sets and class unbalance is appearing to contribute to this discrepancy, since random forest model is prone to overfitting when sample sizes are relatively small.    
+4.	Conditional random forest model performed better than this model in terms of overall accuracy and specificity values as seen from below results but it suffered on overall AUC. But again, this could be caused due to random variation and biases in data sets.  
+
+```{r, echo = FALSE, out.width="50%"}
 myimages<-list.files("./model_comparison_images/conditional_random_forests", pattern = ".png", full.names = TRUE)
 include_graphics(myimages)
 ```
 
-#### Figure 12 - Logistic Regression - Conditional Random Forests  
 
-```{r, echo = FALSE, out.width="25%"}
-myimages<-list.files("./model_comparison_images/LDA", pattern = ".png", full.names = TRUE)
-include_graphics(myimages)
+#### Figure 19 - Conditional Random Forest using Conditional Inference Trees   
+
+```
+	 Random Forest using Conditional Inference Trees
+
+Number of trees:  500 
+
+Response:  FRACTURE 
+Inputs:  PRIORFRAC, AGE, WEIGHT, HEIGHT, BMI, PREMENO, MOMFRAC, ARMASSIST, SMOKE, RATERISK 
+Number of observations:  351 
+
+Confusion Matrix and Statistics
+
+          Reference
+Prediction   0   1
+         0 106  31
+         1   6   6
+                                          
+               Accuracy : 0.7517          
+                 95% CI : (0.6743, 0.8187)
+    No Information Rate : 0.7517          
+    P-Value [Acc > NIR] : 0.544           
+                                          
+                  Kappa : 0.1403          
+ Mcnemar's Test P-Value : 7.961e-05       
+                                          
+            Sensitivity : 0.9464          
+            Specificity : 0.1622 
+         
+Variable Importance as predicted by conditional random forest
+
+AGE        HEIGHT     ARMASSIST           BMI     PRIORFRAC        WEIGHT      RATERISK         SMOKE       PREMENO       MOMFRAC
+
+
 ```
 
-#### Figure 13 - LDA  
+
+## **Linear Discriminant Analysis Model**  
+
+**Model Considerations.**  
+
+LDA can only be done with continuous predictors and in our dataset we have only four continuous predictors: AGE, HEIGHT, WEIGHT and BMI. As we have seen in EDA part that categorical variables appear to be significant in classifying the response, throwing away the information they provide could result in decrease in overall performance of the model (and BMI and WEIGHT not been so significant as seen from logistic model) as compared to rest of the models.  
+
+**Model Assumptions:**  
+
+**Assumption of Equal Variance / CoVariance.**  
+
+We computed the amount of the between-group variance that is explained by each linear discriminate. In this dataset, we tested whether the variance in each continuous variable is the same for all subjects with/without Fractures.  
 
 
-## End Visualizations from Model Comparison
 
-## Record predictive performance from objective 1
 
-## Another competing model (interaction terms)
 
-## Another competing model (just continuous) LDA
+```{r, echo = FALSE, out.width="75%"}
+include_graphics("./model_comparison_images/LDA/runningLDA-1.png")
+```
 
-## nonparametric model (random forest)
+#### Figure 20 - LDA Equal Variance   
 
-## another nonparametric model (conditional random forest)
+```
+Levene's Test for Homogeneity of Variance (center = median)
+       Df F value Pr(>F)
+group   1   1.522 0.2179
+      498               
+Levene's Test for Homogeneity of Variance (center = median)
+       Df F value Pr(>F)
+group   1  0.9566 0.3285
+      498               
+Levene's Test for Homogeneity of Variance (center = median)
+       Df F value Pr(>F)
+group   1  0.9475 0.3308
+      498               
+Levene's Test for Homogeneity of Variance (center = median)
+       Df F value Pr(>F)
+group   1  0.0188 0.8911
+
+
+```
+
+```{r, echo = FALSE, out.width="75%"}
+include_graphics("./model_comparison_images/LDA/runningLDA-2.png")
+```
+
+#### Figure 21 - LDA Ellipse Plots   
+
+From the boxplots and ellipse plots above we can didn’t observe difference in spread of eclipses and axis of eclipses are fairly aligned for each pair. We also ran a Levene’s Test between each predictor and response and result confirms that spread for each predictor is not differing for levels of response  
+
+**Assumption of independence among observations.**  
+
+Since the method for selecting the subjects for this study and then formulation of given dataset from all of such population is not fully known, caution must be taken while generalizing the results from this analysis. Potential biases could be present among observations as selection bias, recall bias, serial and spatial correlation etc could be present. Generalizing the results from this analysis to whole population of such subjects is to be based upon assumption that subjects in given dataset are as representative of the underlying population as a random samples from such population are. For the purpose of our analysis, we assume observations in our dataset are independent of one another and proceed with the analysis.  
+
+**Assumption of Normality**  
+
+Density plots were plotted for each predictor for both levels of response as seen below:  
+
+```{r, echo = FALSE, out.width="75%"}
+include_graphics("./model_comparison_images/LDA/runningLDA-3.png")
+```
+
+#### Figure 22 - LDA Density Plots   
+
+
+Distribution of all predictors except AGE looks sufficiently normal and have about similar spread. To check on AGE variable a QQ Plot for AGE for both levels of response variable was plotted as seen below:  
+
+```{r, echo = FALSE, out.width="50%"}
+pics<-c("./model_comparison_images/LDA/runningLDA-4.png", "./model_comparison_images/LDA/runningLDA-5.png")
+include_graphics(pics)
+```
+
+#### Figure 23 - LDA QQ Plots   
+
+
+As seen from the above QQ plots and presence of sufficient sample size, distribution of AGE looks sufficiently Normal for both levels of response variable.
+
+Since all the assumptions for LDA have been met, we would now go ahead and run the LDA model.
+
+**Model Fit.**
+
+**Note on PCA**  
+
+Our dataset had only 4 continuous predictors so PCA would not help us much in terms of dimensionality reduction. We ran initial PCA model to see if data separates out well. But as seen from below output from Scree plot that 4 Principal Components were required to explain all variance and that’s equal to number of predictors used. Also, data didn’t separate out well between PC1 and PC2.
+
+```{r, echo = FALSE, out.width="50%"}
+pics<-c("./model_comparison_images/LDA/pcs_scree.png", "./model_comparison_images/LDA/pca_glow500.png")
+include_graphics(pics)
+```
+
+#### Figure 24 - LDA PCA Notes   
+
+
+
+```
 
 ## Summary table of performance
 
@@ -447,7 +778,10 @@ include_graphics(myimages)
 
 ## Conclusion/Discussion
 
-TODO:
+In summary, as seen from above table with performance metrices:  
+
+Simple logistic model suffers in terms of prediction accuracy since its not complex enough to model all trends present in dataset. Logistic regression model with interactions added did a better job in improving the overall AUC and accuracy over the simple logistic model. Random Forest increased the overall AUC but performed really badly in terms of specificity and looks to overfit the trends in dataset on true negative side and hence predicting badly on true positive side since our training/validation dataset was unbalanced in favor of true negative observations. LDA, as expected performed poorly as compared to other models in terms of overall AUC since it didn’t consider categorical variables and it can be seen from EDA that most of categorical variables looked promising for separating the response. And also, two of continuous predictors: Weight and BMI were not significant as seen by the logistic model fit. Hence, all in all, in our given dataset, we think logistic model with interactions performed better than rest of the models since it didn’t overfit on true negative side and had enough complexity as compared to rest of the models to make informed predictions.   
+
 
 
 ## ***Appendix*** ==========================================  
