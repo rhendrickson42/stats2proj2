@@ -134,13 +134,67 @@ include_graphics(myimages)
 
 ## Restatement of Problem and the overall approach to solve it.
 
-TODO:
+Logistic regression is used to describe data and to explain the relationship between one dependent binary variable, in this case whether a woman will have a fracture related to osteoporosis, with one or more continuous or categorical variables. Using different modeling techniques, we will try to predict whether a sample will have a fracture related event.
 
-## Model Selection
+## **Simple Logistic Model Selection**
 
-TODO: add a description for the below selection
+
+**Model Considerations**
+
+For the purpose of feature selection for the simple logistic model, a lasso+logistic regression with cross validation (for 1000 lambda values) was performed on training data set in order to obtain the penalty value(lambda) that results in minimum misclassification rate. The result of this procedure is present in figure 7 below:
+
+```{r, echo = FALSE, out.width="33%"}
+myimages<-list.files("./model_comparison_images/lr_assumptionscheck", pattern = ".png", full.names = TRUE)
+include_graphics(myimages)
+```
+
+#### Figure 7 - Simple Logistic Regression lasso+logistic regression  
+
+```
+Then the lasso+logistic model was rerun with best value of lambda obtained(lambda.min) from previous procedure and was used to uncover feature set that was later used as initial starting point in our simple logistic model. The features selected after LASSO shrinkage procedure are as:
+12 x 1 sparse Matrix of class "dgCMatrix"
+                                  1
+(Intercept)              1.52902669
+trainingData.AGE         0.03598544
+trainingData.WEIGHT      .         
+trainingData.HEIGHT     -0.03340871
+trainingData.BMI         .         
+trainingData.PRIORFRAC1  0.15180349
+trainingData.PREMENO1    .         
+trainingData.MOMFRAC1    0.04035537
+trainingData.ARMASSIST1  0.52512963
+trainingData.SMOKE1      .         
+trainingData.RATERISK.L  0.33991586
+trainingData.RATERISK.Q  . 
+```
+
+Next, we went ahead and run simple logistic regression using this feature set of AGE, HEIGHT, PRIORFRAC, MOMFRAC, ARMASSIST and RATERISK.
+
+
+**Model Assumptions:**  
+
+**Assumption of binary response while running binary logistic regression.**  
+
+The dependent variable is a factor with two defined levels (0 = No, 1 = Yes).  
+
+**Assumption of independence among observations.**  
+
+Since the method for selecting the subjects for this study and then formulation of given dataset from all of such population is not fully known, caution must be taken while generalizing the results from this analysis. Potential biases could be present among observations as selection bias, recall bias, serial and spatial correlation etc could be present. Generalizing the results from this analysis to whole population of such subjects is to be based upon assumption that subjects in given dataset are as representative of the underlying population as a random samples from such 
+population are. For the purpose of our analysis, we assume observations in our dataset are independent of one another and proceed with the analysis.
+
+**Assumption of linearity of independent continuous predictors and their respective log odds**  
+
+A scatter plot between two continuous predictors: AGE and HEIGHT as identified to be used in simple logistic model and their respective log odds is plotted and present as below.
+
+```{r, echo = FALSE, out.width="75%"}
+include_graphics("./model_comparison_images/lr_normal/logisticRegressionNormal1-3.png")
+```
+
+#### Figure X - Scatter Plot between AGE and HEIGHT and their log odds    
 
 **Simple Logistic Model Fit:**  
+
+The overall logistic regression model using selected variables came out significant and found AGE, HEIGHT, ARMASSIST and RATERISK as significant predictors at alpha=0.05 level for determining probability of getting a fracture in first year(response variable). The model output is as below:  
 
 ```
 Call:
@@ -161,15 +215,46 @@ PRIORFRAC1   0.22281    0.30097   0.740  0.45912
 MOMFRAC1     0.33522    0.38263   0.876  0.38097   
 ARMASSIST1   0.68418    0.27861   2.456  0.01406 * 
 RATERISK.L   0.50762    0.24656   2.059  0.03951 * 
-RATERISK.Q  -0.06727    0.22219  -0.303  0.76209 
+RATERISK.Q  -0.06727    0.22219  -0.303  0.76209   
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 395.31  on 350  degrees of freedom
+Residual deviance: 355.55  on 343  degrees of freedom
+AIC: 371.55
 ```
+A recursive model refinement process was performed by trying to add more variables that were not present in initial fit; and model performance in terms of AUC under ROC curve and accuracy via confusion matrix for validation dataset was assessed for each subsequent model. No subsequent model fit resulted in significant gains in terms of improved performance parameters. In fact, some resulted in decrease in accuracy on validation set as they were just acting as noise and didn’t provide any valuable information about the response variable. Hence, initial fit was chosen as best fit and assessed further.   
+
+On the initial model fit, VIFs and influential observation analysis was then performed and results can be seen below as:
+
+```{r, echo = FALSE, out.width="75%"}
+include_graphics("./model_comparison_images/lr_normal/logisticRegressionNormal-cooksD.png")
+```
+
+```
+              GVIF Df GVIF^(1/(2*Df))
+AGE       1.209972  1        1.099987
+HEIGHT    1.084342  1        1.041317
+PRIORFRAC 1.172110  1        1.082640
+MOMFRAC   1.010590  1        1.005281
+ARMASSIST 1.124261  1        1.060312
+RATERISK  1.096380  2        1.023270
+
+```
+
+As seen from above results that multiclonality is not seen and no substantially influential observation is found as seen from Cook’s d plot. Hence, we proceeded with current model for model equation formulation and coefficients interpretations.
+
+
 **Model Equation**
 
 $log(\pi)$ = 3.33365 +  0.04347 * AGE - 0.04881 * HEIGHT + 0.22281 * PRIORFRAC + 0.33522 * MOMFRAC    
                 + 0.68418 * ARMASSIST + 0.50762 * RATERISK_2 - 0.06727 * RATERISK_3    
 
 ```
-Coefficients and 95% Confidence Intervals converted to Normal Scale 
+Next, we converted model coefficients and their respective 95% Confidence Intervals to Normal Scale and proceeded with coefficient interpretations as below:  
+
             ODDs_Ratio     2.5 %       97.5 %
 (Intercept) 28.0403767 0.0172620 5.378401e+04
 AGE          1.0444253 1.0128322 1.077662e+00
@@ -182,9 +267,6 @@ RATERISK.Q   0.9349462 0.6060378 1.451499e+00
 
 ```
 
-## Checking Assumptions
-
-TODO: Lokesh please add assumptions
 
 ## *Interpretation of the Coefficients:*  
 
@@ -208,21 +290,68 @@ For RATERISK.3: All the other variables being constant, the estimated odds for a
 
 
 
+**Model Assessment:**  
 
+Model performance was assessed on validation data using following parameters:
+1.	AUC under ROC curve
+2.	Overall Accuracy, Sensitivity and Specificity values obtained from confusion matrix.
+
+
+```{r, echo = FALSE, out.width="50%"}
+pics<-c("./model_comparison_images/lr_normal/logisticRegressionNormal-1.png", "./model_comparison_images/lr_normal/logisticRegressionNormal-2.png")
+
+include_graphics(pics)
+```
+
+```
+## Confusion Matrix and Statistics
+##
+## Reference
+## Prediction 0 1
+## 0 108 35
+## 1 4 2
+##
+## Accuracy : 0.7383
+## 95% CI : (0.66, 0.8068)
+## No Information Rate : 0.7517
+## P-Value [Acc > NIR] : 0.6866
+##
+## Kappa : 0.0255
+## Mcnemar's Test P-Value : 1.556e-06
+##
+## Sensitivity : 0.96429
+## Specificity : 0.05405
+## Pos Pred Value : 0.75524
+## Neg Pred Value : 0.33333
+## Prevalence : 0.75168
+## Detection Rate : 0.72483
+## Detection Prevalence : 0.95973
+## Balanced Accuracy : 0.50917
+##
+## 'Positive' Class : 0
+##
+```
+
+As seen from above ROC curves and confusion matrix:
+
+1.	Training set AUC is 71.6% and that for validation data set is about 67.7%. This is understandable since model was created using data training data set.  
+
+2.	Overall Accuracy of the model is at 74.5% with high sensitivity 94.64% but very low specificity 13.51 %.   
+
+3.	There relative low values of overall AUC and accuracy could be due to:  
+    a.	Lack of complexity in the current model (in terms of higher order terms, transformations, interactions) etc.  
+    b.	The available feature set and number of samples available are not sufficient enough to accurate model most of the trends in actual population data.  
+    c.	Class imbalance that is present in original, training and validation data set. Especially, the number of true positive cases are very much under represented in both the training and test datasets and this could be the cause of low specificity values obtained from this model.  
+    
+4.	 Specificity for the model could be improved by lower the cutoff for classification from its initial value of 0.5. This should be warranted since cost of not predicting true positive outweighs cost of predicting false positive in the current situation.  
 
 
 
 ## Final conclusions from the analysis of Objective 1
 
+To improve the accuracy and AUC for the model, we would next increase complexity in current model by adding interactions to it.
 
 
-```
-TODO:
-
-
-take writeup from EDA and place here with reference to figures, etc
-
-```
 
 
 
@@ -250,13 +379,6 @@ include_graphics(myimages)
 ```
 
 #### Figure 7 - Fracture Counts  
-
-```{r, echo = FALSE, out.width="33%"}
-myimages<-list.files("./model_comparison_images/lr_assumptionscheck", pattern = ".png", full.names = TRUE)
-include_graphics(myimages)
-```
-
-#### Figure 8 - Logistic Regression Assumptions Check  
 
 
 ```{r, echo = FALSE, out.width="25%"}
