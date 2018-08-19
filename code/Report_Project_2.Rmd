@@ -749,6 +749,62 @@ Since all the assumptions for LDA have been met, we would now go ahead and run t
 
 **Model Fit.**
 
+```
+Call:
+lda(FRACTURE ~ AGE + HEIGHT + WEIGHT + BMI, data=trainingData)
+
+Prior probabilities of groups:
+        0         1
+        0.7492877 0.2507123
+        
+Group means:
+       AGE    HEIGHT   WEIGHT     BMI
+0 67.16730 162.2129 72.01559 27.31879  
+1 71.95445 159.7614 70.53409 27.69421
+
+Coefficients of linear discriminants:
+               LD1
+AGE     0.08790497
+HEIGHT  0.20784982
+WEIGHT -0.31576637
+BMI     0.86125425
+```
+
+**Model Assessment.**
+
+Model performance was assessed on training data using following parameters:  
+1.	AUC under ROC curve  
+2.	Overall Accuracy, Sensitivity and Specificity values obtained from confusion matrix.  
+
+**ROC Curve for Training  **  
+
+```{r, echo = FALSE, out.width="50%"}
+pics<-c("./model_comparison_images/LDA/lda01.png", "./model_comparison_images/LDA/lda02.png")
+include_graphics(pics)
+```
+
+#### Figure 24 - LDA ROC Plots   
+
+
+```{r, echo = FALSE, out.width="50%"}
+pics<-c("./model_comparison_images/LDA/lda03.png")
+include_graphics(pics)
+```
+
+#### Figure 25 - LDA Confusion Matrix     
+
+As seen from above ROC curves and confusion matrix:  
+1.	Training set AUC is 67% and that for validation data set is about 60.2%. This is understandable since model was created using data training data set.  
+2.	Overall Accuracy of the model is at 73.15% with high sensitivity 94.64% but very low specificity 8.1 %.   
+3.	There relative low values of overall AUC and accuracy could be due to:  
+a.	Lack of complexity in the current model (in terms of higher order terms, transformations, interactions) etc.  
+b.	The fact tha LDA only asseses continuous variables.  
+c.	Class imbalance that is present in original, training and validation data set. Especially, the number of true positive cases are very much under represented in both the training and test datasets and this could be the cause of low specificity values obtained from this model.  
+4.	 Specificity for the model could be improved by lower the cutoff for classification from its initial value of 0.5. This should be warranted since cost of not predicting true positive outweighs cost of predicting false positive in the current situation.  
+
+To improve the accuracy and AUC for the model, we would need increase the number of continuous variables to explain the dataset.  
+
+
 **Note on PCA**  
 
 Our dataset had only 4 continuous predictors so PCA would not help us much in terms of dimensionality reduction. We ran initial PCA model to see if data separates out well. But as seen from below output from Scree plot that 4 Principal Components were required to explain all variance and that’s equal to number of predictors used. Also, data didn’t separate out well between PC1 and PC2.
@@ -758,7 +814,7 @@ pics<-c("./model_comparison_images/LDA/pcs_scree.png", "./model_comparison_image
 include_graphics(pics)
 ```
 
-#### Figure 24 - LDA PCA Notes   
+#### Figure 26 - LDA PCA Notes   
 
 
 
