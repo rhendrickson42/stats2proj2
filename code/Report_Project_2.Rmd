@@ -136,7 +136,7 @@ myimages<-list.files("./model_comparison_images/fracture_counts_cv", pattern = "
 include_graphics(myimages)
 ```
 
-#### Figure 7 - Fracture Counts  
+#### Figure 7 - Class Distribution in Training/Test and Overall Dataset  
 
 
 ## Restatement of Problem and the overall approach to solve it.
@@ -317,32 +317,31 @@ include_graphics(pics)
 #### Figure 10 - Simple Logistic Regression - Performance    
 
 ```
-## Confusion Matrix and Statistics
-##
-## Reference
-## Prediction 0 1
-## 0 108 35
-## 1 4 2
-##
-## Accuracy : 0.7383
-## 95% CI : (0.66, 0.8068)
-## No Information Rate : 0.7517
-## P-Value [Acc > NIR] : 0.6866
-##
-## Kappa : 0.0255
-## Mcnemar's Test P-Value : 1.556e-06
-##
-## Sensitivity : 0.96429
-## Specificity : 0.05405
-## Pos Pred Value : 0.75524
-## Neg Pred Value : 0.33333
-## Prevalence : 0.75168
-## Detection Rate : 0.72483
-## Detection Prevalence : 0.95973
-## Balanced Accuracy : 0.50917
-##
-## 'Positive' Class : 0
-##
+Confusion Matrix and Statistics
+ 
+          Reference
+Prediction   0   1
+         0 106  32
+         1   6   5
+                                          
+               Accuracy : 0.745           
+                 95% CI : (0.6672, 0.8128)
+    No Information Rate : 0.7517          
+    P-Value [Acc > NIR] : 0.6175          
+                                          
+                  Kappa : 0.1067          
+ Mcnemar's Test P-Value : 5.002e-05       
+                                          
+            Sensitivity : 0.9464          
+            Specificity : 0.1351          
+         Pos Pred Value : 0.7681          
+         Neg Pred Value : 0.4545          
+             Prevalence : 0.7517          
+         Detection Rate : 0.7114          
+   Detection Prevalence : 0.9262          
+      Balanced Accuracy : 0.5408          
+                                          
+       'Positive' Class : 0  
 ```
 
 #### Figure 11 - Simple Logistic Regression - Confusion Matrix    
@@ -365,6 +364,7 @@ As seen from above ROC curves and confusion matrix:
 
 ## Final conclusions from the analysis of Objective 1
 
+The model assessment was performed above and it was found that we needed to add more to the model to see if it could be improved. 
 To improve the accuracy and AUC for the model, we would next increase complexity in current model by adding interactions to it.
 
 
@@ -376,7 +376,7 @@ To improve the accuracy and AUC for the model, we would next increase complexity
 
 ## **Objective 2** - Additional Competing Models
 
-•	The performance of the Simple Logistic Regression model developed earlier has performance characteristics described in Figure X and Figure X with the AUC under ROC curve and Confusion Matrix.  
+•	The performance of the Simple Logistic Regression model developed earlier has performance characteristics described in Figure 10 and Figure 11 with the AUC under ROC curve and Confusion Matrix.  
 
 ## **Logistic Regression Model with Interactions**  
 
@@ -464,7 +464,6 @@ Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’
 ```
 Although no interaction was significant at alpha=0.05 level, interaction between AGE*PriorFrac looks promising (p-value = 0.10688). Hence, using the above model for model equation formulation.
 
-**Model Equation:**  
 
 **Model Assessment.**  
 
@@ -617,7 +616,8 @@ Prediction   0   1
 #### Figure 18 - Conditional Random Forest Confusion Matrix   
 
 
-  As seen from above ROC curves and confusion matrix:
+  As seen from above ROC curves and confusion matrix:  
+  
 1.	Random Forest model improves on overall AUC performance slightly and takes it to 74.2% as compared to logistic regression with interaction model that had 72.5% AUC. So it did model some extra remaining complexity.  
 
 2.	This model performed really badly as compared to other models in classifying true positives and have specificity value of zero.  
@@ -786,23 +786,18 @@ include_graphics(pics)
 #### Figure 24 - LDA ROC Plots   
 
 
-```{r, echo = FALSE, out.width="50%"}
-pics<-c("./model_comparison_images/LDA/lda03.png")
-include_graphics(pics)
-```
-
-#### Figure 25 - LDA Confusion Matrix     
-
 As seen from above ROC curves and confusion matrix:  
 1.	Training set AUC is 67% and that for validation data set is about 60.2%. This is understandable since model was created using data training data set.  
 2.	Overall Accuracy of the model is at 73.15% with high sensitivity 94.64% but very low specificity 8.1 %.   
-3.	There relative low values of overall AUC and accuracy could be due to:  
+3.  Overall model accuracy could be increased by taking into account prior probabilities.  
+4.	There relative low values of overall AUC and accuracy could be due to:  
 a.	Lack of complexity in the current model (in terms of higher order terms, transformations, interactions) etc.  
 b.	The fact tha LDA only asseses continuous variables.  
 c.	Class imbalance that is present in original, training and validation data set. Especially, the number of true positive cases are very much under represented in both the training and test datasets and this could be the cause of low specificity values obtained from this model.  
-4.	 Specificity for the model could be improved by lower the cutoff for classification from its initial value of 0.5. This should be warranted since cost of not predicting true positive outweighs cost of predicting false positive in the current situation.  
+5.	 Specificity for the model could be improved by lower the cutoff for classification from its initial value of 0.5. This should be warranted since cost of not predicting true positive outweighs cost of predicting false positive in the current situation.  
 
 To improve the accuracy and AUC for the model, we would need increase the number of continuous variables to explain the dataset.  
+
 
 
 **Note on PCA**  
@@ -814,7 +809,7 @@ pics<-c("./model_comparison_images/LDA/pcs_scree.png", "./model_comparison_image
 include_graphics(pics)
 ```
 
-#### Figure 26 - LDA PCA Notes   
+#### Figure 26 - PCA Notes   
 
 
 
@@ -824,8 +819,8 @@ include_graphics(pics)
 
 | Model                                                         | Predictors         | Accuracy | 95% CI         | Sensitivity | Specificity | AUC   |
 |---------------------------------------------------------------|--------------------|----------|----------------|-------------|-------------|-------|
-| Logistic Regression (logit)                                   | 7                  | 74.5%    | (66.7%, 81.3%) | 94.6%       | 13.5%       | 67.8% |
-| Logistic Regression w/Interactions (logit)                    | 7 + 3 interactions | 75.2%    | (67.4%, 81.9%) | 92.9%       | 21.6%       | 72.2% |
+| Logistic Regression (logit)                                   | 6                  | 74.5%    | (66.7%, 81.3%) | 94.6%       | 13.5%       | 67.8% |
+| Logistic Regression w/Interactions (logit)                    | 6 + 3 interactions | 75.2%    | (67.4%, 81.9%) | 93.7%       | 18.9%       | 72.2% |
 | Random Forest*                                                | 10                 | 74.5%    | (66.7%, 81.3%) | 99.1%       | 0.0%        | 74.2% |
 | *RF Lower Cutoff (decreasing the probability from 50% to 30%) | 10                 | 73.8%    | (66%, 80.7%)   | 91.1%       | 21.6%       |       |
 | Conditional Random Forest                                     | 10                 | 75.2%    | (67.4%, 81.9%) | 94.6%       | 16.2%       | 69.3% |
@@ -836,11 +831,15 @@ include_graphics(pics)
 
 In summary, as seen from above table with performance metrices:  
 
-Simple logistic model suffers in terms of prediction accuracy since its not complex enough to model all trends present in dataset. Logistic regression model with interactions added did a better job in improving the overall AUC and accuracy over the simple logistic model. Random Forest increased the overall AUC but performed really badly in terms of specificity and looks to overfit the trends in dataset on true negative side and hence predicting badly on true positive side since our training/validation dataset was unbalanced in favor of true negative observations. LDA, as expected performed poorly as compared to other models in terms of overall AUC since it didn’t consider categorical variables and it can be seen from EDA that most of categorical variables looked promising for separating the response. And also, two of continuous predictors: Weight and BMI were not significant as seen by the logistic model fit. Hence, all in all, in our given dataset, we think logistic model with interactions performed better than rest of the models since it didn’t overfit on true negative side and had enough complexity as compared to rest of the models to make informed predictions.   
+Simple logistic model suffers in terms of prediction accuracy since its not complex enough to model all trends present in dataset. Logistic regression model with interactions added did a better job in improving the overall AUC and accuracy over the simple logistic model. Random Forest increased the overall AUC but performed really badly in terms of specificity and looks to overfit the trends in dataset on true negative side and hence predicting badly on true positive side since our training/validation dataset was unbalanced in favor of true negative observations. LDA, as expected performed poorly as compared to other models in terms of overall AUC since it didn’t consider categorical variables and it can be seen from EDA that most of categorical variables looked promising for separating the response. And also, two of continuous predictors: Weight and BMI were not significant as seen by the logistic model fit. **Hence, all in all, in our given dataset, we think logistic model with interactions performed better than rest of the models since it didn’t overfit on true negative side and had enough complexity as compared to rest of the models to make informed predictions.**     
 
 
 
 ## ***Appendix*** ==========================================  
+
+Source code for this project is hosted at Github. The following sections of the appendix are the results of running the code hosted at the following address:  
+
+https://github.com/rhendrickson42/stats2proj2
 
 
 ## *** ***Appendix A:*** EDA - Analysis =======================  
